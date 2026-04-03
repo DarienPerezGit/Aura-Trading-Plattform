@@ -22,3 +22,64 @@ class MacroSignal(BaseModel):
     reasoning: str
     key_factors: list[str]
     snapshot_date: Optional[str] = None
+
+
+# ── Market Data Models ───────────────────────────────────────────────────────
+
+class NewsItem(BaseModel):
+    id: str
+    headline: str
+    source: str
+    url: str
+    summary: str
+    timestamp: str                  # ISO
+    symbols: list[str]
+    sentiment: Optional[float] = None  # -1 to 1
+
+
+class QuoteData(BaseModel):
+    symbol: str
+    price: float
+    change: float
+    change_percent: float
+    high: float
+    low: float
+    open: float
+    prev_close: float
+    timestamp: str
+
+
+class CryptoTicker(BaseModel):
+    symbol: str
+    price: float
+    change_24h: float
+    change_percent_24h: float
+    high_24h: float
+    low_24h: float
+    volume_24h: float
+    timestamp: str
+
+
+class OHLCBar(BaseModel):
+    timestamp: str
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: float
+
+
+class SentimentData(BaseModel):
+    symbol: str
+    score: float                    # -1 to 1
+    buzz: float
+    articles_count: int
+
+
+class NewsSentimentSignal(BaseModel):
+    overall_sentiment: str          # positivo | negativo | neutral
+    score: float                    # -1.0 to 1.0
+    summary: str
+    key_themes: list[str]
+    impacted_assets: list[str]
+    generated_at: Optional[str] = None
