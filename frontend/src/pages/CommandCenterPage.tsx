@@ -8,13 +8,13 @@ import {
   Activity,
 } from 'lucide-react'
 import { useMarketStore } from '@/stores/market-store'
-import type { MarketAsset } from '@/stores/market-store'
 import { useWorkspaceStore } from '@/stores/workspace-store'
 import { MarketCard } from '@/components/market/MarketCard'
 import { DataPanel } from '@/components/shared/DataPanel'
 import { MetricCard } from '@/components/shared/MetricCard'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { SparklineChart } from '@/components/charts/SparklineChart'
+import { GeoIntelMap } from '@/components/charts/GeoIntelMap'
 import { cn } from '@/lib/utils'
 import { formatNumber, formatPercent, formatVolume } from '@/lib/format'
 import { MOCK_SIGNALS, MOCK_AI_MARKET_SUMMARY } from '@/data/mock-signals'
@@ -34,21 +34,21 @@ export function CommandCenterPage() {
   )
 
   return (
-    <div className="h-full flex flex-col gap-3 p-3">
-      {/* Top Row: Market Snapshot */}
+    <div className="h-full flex flex-col gap-2 p-3">
+      {/* Top Row: Market KPIs */}
       <div className="grid grid-cols-4 xl:grid-cols-8 gap-2 shrink-0">
         {globalAssets.map((asset) => (
           <button
             key={asset.symbol}
             onClick={() => navigate(`/activo/${asset.symbol}`)}
-            className="panel-card p-2.5 hover:bg-aura-card-hover transition-all cursor-pointer text-left"
+            className="panel-card p-2 hover:bg-aura-card-hover transition-all cursor-pointer text-left"
           >
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-0.5">
               <span className="text-[11px] font-semibold text-aura-text">{asset.symbol}</span>
               <SparklineChart
                 data={asset.sparkline}
-                width={40}
-                height={14}
+                width={36}
+                height={12}
                 positive={asset.changePercent >= 0}
               />
             </div>
@@ -67,91 +67,79 @@ export function CommandCenterPage() {
         ))}
       </div>
 
-      {/* Main 3-column grid */}
-      <div className="flex-1 grid grid-cols-12 gap-3 min-h-0">
-        {/* LEFT: Watchlist + Top Movers (col-span-3) */}
-        <div className="col-span-3 flex flex-col gap-3 min-h-0">
-          <DataPanel title="Watchlist" subtitle={`${watchlist.length} activos`} className="flex-1">
-            <div className="space-y-1">
-              {watchlist.map((item) => {
-                const asset = assets[item.symbol]
-                if (!asset) return null
-                return (
-                  <MarketCard
-                    key={item.symbol}
-                    asset={asset}
-                    compact
-                    onClick={() => navigate(`/activo/${item.symbol}`)}
-                  />
-                )
-              })}
+      {/* Main Grid: Signals | GEO MAP (center) | AI Insights */}
+      <div className="flex-1 grid grid-cols-12 gap-2 min-h-0">
+        {/* LEFT: Signals Panel (col-span-2) */}
+        <div className="col-span-2 flex flex-col gap-2 min-h-0">
+          <DataPanel
+            title="Senales"
+            subtitle={`${MOCK_SIGNALS.length} activas`}
+            className="flex-1"
+          >
+            <div className="space-y-1.5">
+              {MOCK_SIGNALS.map((signal) => (
+                <SignalCard
+                  key={signal.id}
+                  signal={signal}
+                  onClick={() => navigate(`/activo/${signal.symbol}`)}
+                />
+              ))}
             </div>
           </DataPanel>
 
-          <DataPanel title="Top Movers" className="flex-1">
-            <div className="space-y-3">
-              {/* Gainers */}
-              <div>
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <ArrowUpRight className="w-3 h-3 text-aura-bullish" />
-                  <span className="text-[10px] font-semibold text-aura-bullish uppercase">
-                    Mayores subas
+          {/* Quick Movers */}
+          <DataPanel title="Top Movers" className="shrink-0">
+            <div className="space-y-1">
+              {movers.gainers.slice(0, 2).map((a) => (
+                <button
+                  key={a.symbol}
+                  onClick={() => navigate(`/activo/${a.symbol}`)}
+                  className="flex items-center justify-between w-full px-1.5 py-0.5 rounded hover:bg-aura-card transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-1">
+                    <ArrowUpRight className="w-2.5 h-2.5 text-aura-bullish" />
+                    <span className="text-[11px] text-aura-text">{a.symbol}</span>
+                  </div>
+                  <span className="text-[11px] font-mono text-aura-bullish">
+                    {formatPercent(a.changePercent)}
                   </span>
-                </div>
-                {movers.gainers.slice(0, 3).map((a) => (
-                  <button
-                    key={a.symbol}
-                    onClick={() => navigate(`/activo/${a.symbol}`)}
-                    className="flex items-center justify-between w-full px-2 py-1 rounded hover:bg-aura-card transition-colors cursor-pointer"
-                  >
-                    <span className="text-xs text-aura-text">{a.symbol}</span>
-                    <span className="text-xs font-mono text-aura-bullish">
-                      {formatPercent(a.changePercent)}
-                    </span>
-                  </button>
-                ))}
-              </div>
-
-              {/* Losers */}
-              <div>
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <ArrowDownRight className="w-3 h-3 text-aura-bearish" />
-                  <span className="text-[10px] font-semibold text-aura-bearish uppercase">
-                    Mayores bajas
+                </button>
+              ))}
+              {movers.losers.slice(0, 2).map((a) => (
+                <button
+                  key={a.symbol}
+                  onClick={() => navigate(`/activo/${a.symbol}`)}
+                  className="flex items-center justify-between w-full px-1.5 py-0.5 rounded hover:bg-aura-card transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-1">
+                    <ArrowDownRight className="w-2.5 h-2.5 text-aura-bearish" />
+                    <span className="text-[11px] text-aura-text">{a.symbol}</span>
+                  </div>
+                  <span className="text-[11px] font-mono text-aura-bearish">
+                    {formatPercent(a.changePercent)}
                   </span>
-                </div>
-                {movers.losers.slice(0, 3).map((a) => (
-                  <button
-                    key={a.symbol}
-                    onClick={() => navigate(`/activo/${a.symbol}`)}
-                    className="flex items-center justify-between w-full px-2 py-1 rounded hover:bg-aura-card transition-colors cursor-pointer"
-                  >
-                    <span className="text-xs text-aura-text">{a.symbol}</span>
-                    <span className="text-xs font-mono text-aura-bearish">
-                      {formatPercent(a.changePercent)}
-                    </span>
-                  </button>
-                ))}
-              </div>
+                </button>
+              ))}
             </div>
           </DataPanel>
         </div>
 
-        {/* CENTER: Sector Heatmap + Metrics (col-span-6) */}
-        <div className="col-span-6 flex flex-col gap-3 min-h-0">
+        {/* CENTER: Geo-Intelligence Map (col-span-7) — THE CENTERPIECE */}
+        <div className="col-span-7 flex flex-col gap-2 min-h-0">
           <DataPanel
-            title="Mapa de Mercado"
-            subtitle="Performance por sector"
+            title="Global Intelligence"
+            subtitle="Real-time market activity & risk"
             className="flex-1"
             noPadding
           >
-            <SectorHeatmap
-              assets={Object.values(assets)}
-              onSelect={(s) => navigate(`/activo/${s}`)}
+            <GeoIntelMap
+              onRegionClick={() => {
+                navigate('/geo')
+              }}
             />
           </DataPanel>
 
-          {/* Bottom metrics */}
+          {/* Bottom metrics row */}
           <div className="grid grid-cols-4 gap-2 shrink-0">
             <MetricCard
               label="Regimen"
@@ -184,27 +172,40 @@ export function CommandCenterPage() {
           </div>
         </div>
 
-        {/* RIGHT: Signals Panel + AI Summary (col-span-3) */}
-        <div className="col-span-3 flex flex-col gap-3 min-h-0">
+        {/* RIGHT: AI Insights + Watchlist (col-span-3) */}
+        <div className="col-span-3 flex flex-col gap-2 min-h-0">
+          {/* AI Market Summary */}
           <DataPanel
-            title="Senales Activas"
-            subtitle={`${MOCK_SIGNALS.length} senales`}
-            className="flex-[2]"
+            title="AI Insights"
+            className="shrink-0"
+            actions={<Brain className="w-3.5 h-3.5 text-aura-ai" />}
           >
-            <div className="space-y-2">
-              {MOCK_SIGNALS.map((signal) => (
-                <SignalCard key={signal.id} signal={signal} />
-              ))}
+            <div className="text-[10px] leading-relaxed text-aura-text-secondary whitespace-pre-line">
+              {MOCK_AI_MARKET_SUMMARY.split('**').map((part, i) =>
+                i % 2 === 1 ? (
+                  <strong key={i} className="text-aura-text font-semibold">{part}</strong>
+                ) : (
+                  <span key={i}>{part}</span>
+                ),
+              )}
             </div>
           </DataPanel>
 
-          <DataPanel
-            title="AI Market Summary"
-            className="flex-1"
-            actions={<Brain className="w-3.5 h-3.5 text-aura-ai" />}
-          >
-            <div className="text-[11px] leading-relaxed text-aura-text-secondary whitespace-pre-line">
-              {MOCK_AI_MARKET_SUMMARY.replace(/\*\*/g, '')}
+          {/* Watchlist */}
+          <DataPanel title="Watchlist" subtitle={`${watchlist.length} activos`} className="flex-1">
+            <div className="space-y-1">
+              {watchlist.map((item) => {
+                const asset = assets[item.symbol]
+                if (!asset) return null
+                return (
+                  <MarketCard
+                    key={item.symbol}
+                    asset={asset}
+                    compact
+                    onClick={() => navigate(`/activo/${item.symbol}`)}
+                  />
+                )
+              })}
             </div>
           </DataPanel>
         </div>
@@ -214,18 +215,21 @@ export function CommandCenterPage() {
 }
 
 /* ---- Signal Card ---- */
-function SignalCard({ signal }: { signal: AISignal }) {
+function SignalCard({ signal, onClick }: { signal: AISignal; onClick: () => void }) {
   return (
-    <div className="panel-card p-2.5 space-y-1.5">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-aura-text">{signal.symbol}</span>
+    <button
+      onClick={onClick}
+      className="w-full panel-card p-2 text-left hover:bg-aura-card-hover transition-all cursor-pointer"
+    >
+      <div className="flex items-center justify-between mb-0.5">
+        <span className="text-[11px] font-bold text-aura-text">{signal.symbol}</span>
         <StatusBadge status={signal.direction} size="sm" />
       </div>
       <div className="flex items-center justify-between">
-        <span className="text-[10px] text-aura-text-muted">{signal.regime}</span>
+        <span className="text-[9px] text-aura-text-muted truncate mr-2">{signal.regime}</span>
         <span
           className={cn(
-            'text-[11px] font-mono font-semibold',
+            'text-[10px] font-mono font-semibold',
             signal.confidence >= 75
               ? 'text-aura-bullish'
               : signal.confidence >= 60
@@ -236,92 +240,6 @@ function SignalCard({ signal }: { signal: AISignal }) {
           {signal.confidence}%
         </span>
       </div>
-    </div>
-  )
-}
-
-/* ---- Sector Heatmap (visual centerpiece) ---- */
-function SectorHeatmap({
-  assets,
-  onSelect,
-}: {
-  assets: MarketAsset[]
-  onSelect: (symbol: string) => void
-}) {
-  const sectors = useMemo(() => {
-    const map: Record<string, MarketAsset[]> = {}
-    for (const asset of assets) {
-      const sector = asset.sector ?? 'Otro'
-      ;(map[sector] ??= []).push(asset)
-    }
-    return Object.entries(map).sort((a, b) => b[1].length - a[1].length)
-  }, [assets])
-
-  function sectorAvgChange(sectorAssets: MarketAsset[]): number {
-    if (sectorAssets.length === 0) return 0
-    return sectorAssets.reduce((sum, a) => sum + a.changePercent, 0) / sectorAssets.length
-  }
-
-  function heatColor(changePercent: number): string {
-    const abs = Math.abs(changePercent)
-    const opacity = Math.min(0.5, 0.15 + (abs / 5) * 0.35)
-    if (changePercent >= 0) {
-      return `rgba(34, 197, 94, ${opacity.toFixed(2)})`
-    }
-    return `rgba(239, 68, 68, ${opacity.toFixed(2)})`
-  }
-
-  return (
-    <div className="grid grid-cols-3 gap-2 p-3 h-full auto-rows-fr">
-      {sectors.map(([sector, sectorAssets]) => {
-        const avg = sectorAvgChange(sectorAssets)
-        const isUp = avg >= 0
-        return (
-          <div key={sector} className="flex flex-col gap-1.5 min-h-0">
-            <div className="flex items-center justify-between px-1.5">
-              <span className="text-[10px] font-bold text-aura-text uppercase tracking-wide">
-                {sector}
-              </span>
-              <span
-                className={cn(
-                  'text-[10px] font-mono font-semibold',
-                  isUp ? 'text-aura-bullish' : 'text-aura-bearish',
-                )}
-              >
-                {formatPercent(avg)}
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-1.5 flex-1">
-              {sectorAssets.map((asset) => {
-                const assetUp = asset.changePercent >= 0
-                return (
-                  <button
-                    key={asset.symbol}
-                    onClick={() => onSelect(asset.symbol)}
-                    style={{ backgroundColor: heatColor(asset.changePercent) }}
-                    className={cn(
-                      'rounded-md px-3 py-3 text-left transition-all cursor-pointer min-w-[80px] flex-1',
-                      'hover:ring-1 hover:ring-aura-border hover:brightness-110',
-                      'flex flex-col justify-center',
-                    )}
-                  >
-                    <div className="text-xs font-bold text-aura-text">{asset.symbol}</div>
-                    <div className="text-[10px] text-aura-text-muted truncate">{asset.name}</div>
-                    <div
-                      className={cn(
-                        'text-sm font-mono font-bold mt-1',
-                        assetUp ? 'text-aura-bullish' : 'text-aura-bearish',
-                      )}
-                    >
-                      {formatPercent(asset.changePercent)}
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        )
-      })}
-    </div>
+    </button>
   )
 }
