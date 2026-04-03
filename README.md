@@ -1,173 +1,169 @@
-# Aura Terminal — Institutional Quant Trading System
+# Aura Terminal — Bloomberg Open Source
 
-> Buenos Aires Hackathon 2026 | Kaszek × Anthropic × Digital House
-> Track: Fintech Infrastructure
+> Aura Investments · Departamento I+D · 2026
 
-Sistema de Trading Algorítmico Cuantitativo de nivel institucional con arquitectura modular de 4 capas. Claude agents actúan como *smart glue* que orquesta señales, datos y ejecución. Basado en la [Guía de Recursos Quant](docs/mvp_v0_aura_terminal.md) del equipo I+D de Aura Investments.
-
----
-
-## Arquitectura (4 Capas)
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  CAPA 4 — Visualización    (Grafana + OpenBB Workspace) │
-├─────────────────────────────────────────────────────────┤
-│  CAPA 3 — AI Agents        (Claude Orchestrator)        │
-├─────────────────────────────────────────────────────────┤
-│  CAPA 2 — Motor Ejecución  (nautilus_trader)            │
-├─────────────────────────────────────────────────────────┤
-│  CAPA 1 — Datos            (OpenBB Hub + CCXT/Alpaca)   │
-└─────────────────────────────────────────────────────────┘
-          ↕ Redis (Event Bus + Cache) ↕
-```
+Terminal de información de mercado tipo Bloomberg, construida sobre herramientas open source. El objetivo: replicar —y superar en flexibilidad— la funcionalidad de un Bloomberg Terminal (~$20,000/año) a costo cercano a cero, con IA integrada para análisis en tiempo real.
 
 ---
 
-## Estructura de Carpetas
+## Qué es Aura Terminal
+
+Una plataforma que centraliza datos de mercado (precios, noticias, fundamentals, macro) y los presenta al trader con contexto e inteligencia artificial. No es un motor de ejecución — es la capa de información y análisis que precede a cualquier decisión de trading.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  CAPA 4 — Visualización     (Grafana + OpenBB Workspace)    │
+├─────────────────────────────────────────────────────────────┤
+│  CAPA 3 — AI Signals        (Claude Haiku — Anthropic API)  │
+├─────────────────────────────────────────────────────────────┤
+│  CAPA 2 — Terminal Bloomberg (OpenBB Platform + FastAPI)    │
+├─────────────────────────────────────────────────────────────┤
+│  CAPA 1 — Datos              (Alpaca · Finnhub · FRED · CCXT)│
+└─────────────────────────────────────────────────────────────┘
+                  ↕ Redis (Cache + Pub/Sub) ↕
+```
+
+---
+
+## Qué hace el sistema
+
+| Módulo | Fuente | Qué ve el trader |
+|---|---|---|
+| Cotizaciones en tiempo real | Alpaca + Finnhub | Precio, cambio, volumen |
+| Histórico OHLCV | Alpaca | Gráfico de velas |
+| Crypto multi-exchange | CCXT (Binance, Kraken...) | BTC, ETH y 100+ pares |
+| Noticias por símbolo | Finnhub | Headlines con fuente y timestamp |
+| Datos macro | FRED (Fed Reserve) | Inflación, tasas, empleo |
+| Señal AI — Noticias | Claude Haiku | BUY / SELL / HOLD + reasoning |
+| Señal AI — Macro | Claude Haiku | RISK_ON / RISK_OFF + reasoning |
+| Señal AI — Orquestada | Claude Haiku | Señal final consolidada con contexto |
+
+---
+
+## Stack
+
+| Componente | Tecnología | Para qué |
+|---|---|---|
+| Hub de datos | OpenBB Platform 4.x | Normaliza todas las fuentes, expone REST en localhost:6900 |
+| Data feeds | Alpaca · Finnhub · CCXT · FRED | Precios, noticias, crypto, macro |
+| AI Agents | Claude Haiku (Anthropic) | Análisis de noticias, macro y señales orquestadas |
+| API interna | FastAPI + Uvicorn | Backend que consume el hub y expone endpoints al frontend |
+| Cache | Redis | TTL por endpoint, evita rate limits de APIs externas |
+| Visualización | Grafana + Prometheus | Dashboards de mercado y métricas del sistema |
+| Logging | Loguru | Logs estructurados con rotación diaria |
+| Contenedores | Docker Compose | Todo el stack levanta con un comando |
+
+---
+
+## Estructura del Proyecto
 
 ```
 aura_terminal/
-├── data_pipeline/          ← CAPA 1: ingesta
-│   ├── openbb_hub.py       openbb como hub central de datos (localhost:6900)
-│   ├── websockets/         finnhub_ws.py, binance_ws.py
-│   ├── rest/               fred_client.py, alpaca_client.py, polling.py
-│   └── connectors/         ccxt_adapter.py
+├── data_pipeline/          ← CAPA 1: ingesta de datos
+│   ├── alpaca_client.py    precios históricos + cotizaciones US
+│   ├── finnhub_client.py   noticias + sentimiento + cotizaciones
+│   ├── ccxt_client.py      crypto multi-exchange
+│   └── fred_client.py      indicadores macro (Fed Reserve)
 │
-├── engine/                 ← CAPA 2: motor (nautilus_trader)
-│   ├── strategies/         base_strategy.py, sma_crossover.py, momentum.py
-│   ├── backtesting/        backtest_runner.py
-│   └── execution/          live_runner.py
+├── ai_agents/              ← CAPA 3: señales con IA
+│   ├── news_agent.py       analiza headlines → BUY/SELL/HOLD
+│   ├── macro_agent.py      analiza macro → RISK_ON/RISK_OFF
+│   └── orchestrator.py     sintetiza ambas señales en una final
 │
-├── ai_agents/              ← CAPA 3: IA
-│   ├── agents/             fundamentals_agent.py, news_agent.py,
-│   │                       macro_agent.py, orchestrator.py
-│   ├── signals/            signal_schema.py, signal_router.py
-│   └── prompts/            system_prompts.py
+├── api/                    ← CAPA 2: endpoints REST
+│   └── routes/
+│       ├── health.py       /health — estado del sistema
+│       ├── market.py       /market — precios, barras, crypto, noticias, macro
+│       └── analysis.py     /analysis — señales AI por símbolo
 │
-├── monitoring/             ← CAPA 4: observabilidad
-│   ├── metrics/            prometheus_exporter.py, system_metrics.py
-│   └── dashboards/         grafana_provisioning.py
-│
-├── core/                   config, logger, models, exceptions, redis_client
-├── api/                    FastAPI (health, signal endpoints)
-└── main.py                 entry point
+├── core/                   config, logger, models, redis_client
+└── main.py                 entry point FastAPI
 ```
-
----
-
-## Ramas del Equipo
-
-| Rama | Directorio principal | Responsabilidad |
-|---|---|---|
-| `feature/data-pipeline` | `aura_terminal/data_pipeline/` | WebSockets, REST polling, OpenBB hub |
-| `feature/backtest-core` | `aura_terminal/engine/` | nautilus_trader strategies + backtesting |
-| `feature/ai-agents` | `aura_terminal/ai_agents/` | Claude agents, señales JSON |
-| `feature/monitoring` | `aura_terminal/monitoring/` + `config/` | Grafana, Prometheus, métricas |
-
-Shared: `aura_terminal/core/` y `aura_terminal/api/` se tocan con PR aprobado.
 
 ---
 
 ## Quick Start
 
-### 1. Scaffold del proyecto
-
-```bash
-chmod +x setup.sh
-./setup.sh
-```
-
-### 2. Variables de entorno
+### 1. Variables de entorno
 
 ```bash
 cp .env.example .env
 # Completar API keys en .env
 ```
 
-### 3. Levantar servicios (Docker)
+### 2. Levantar el stack completo
 
 ```bash
-docker compose up -d
+docker compose up --build
 ```
 
 | Servicio | URL |
 |---|---|
-| App (FastAPI) | http://localhost:8000 |
-| OpenBB ODP | http://localhost:6900 |
-| Grafana | http://localhost:3000 |
+| API + Swagger | http://localhost:8000/docs |
+| Grafana | http://localhost:3000 (admin / aura2026) |
 | Prometheus | http://localhost:9090 |
 | Redis | localhost:6379 |
 
-### 4. Dev mode (sin Docker)
+### 3. Dev mode (sin Docker)
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate   # Linux/Mac
-# .venv\Scripts\activate    # Windows
 pip install -r requirements.txt
-python -m aura_terminal.main
-```
-
-### 5. OpenBB como hub de datos
-
-```bash
-# Levantar el servidor OpenBB ODP
-openbb --serve  # expone FastAPI en localhost:6900
-
-# Desde Python
-from openbb import obb
-df = obb.equity.price.historical('AAPL', start_date='2024-01-01')
-```
-
-### 6. Tests
-
-```bash
-pytest tests/ -v
+uvicorn aura_terminal.main:app --reload --port 8000
 ```
 
 ---
 
-## Convenciones de Contribución
+## API Keys necesarias
 
-1. **Nunca pushear a `main` directo.** Todo via PR.
-2. **Cada rama toca solo su directorio.** Si necesitás cambiar `aura_terminal/core/`, avisá al equipo.
-3. **Schemas compartidos** (`event_types.py`, `signal_schema.py`) se definen primero y se freezean antes de codear.
-4. **`.env` nunca se commitea.** Solo `.env.example`.
-5. **Formato:** `ruff check . && ruff format .` antes de cada PR.
-6. **Tests:** cada módulo nuevo incluye al menos un test en `tests/<módulo>/`.
+Todas tienen free tier suficiente para desarrollo:
+
+| Key | Dónde conseguirla | Costo |
+|---|---|---|
+| `FINNHUB_API_KEY` | finnhub.io/register | Gratis |
+| `ALPACA_API_KEY` + `SECRET` | alpaca.markets | Gratis |
+| `FRED_API_KEY` | fred.stlouisfed.org/docs/api/api_key | Gratis |
+| `ANTHROPIC_API_KEY` | console.anthropic.com | Pago (AI agents) |
 
 ---
 
-## Stack
+## Endpoints principales
 
-| Componente | Tecnología |
+```
+GET /market/quote/{symbol}          → cotización en tiempo real
+GET /market/bars/{symbol}?days=30   → histórico OHLCV
+GET /market/crypto/{symbol}         → cotización crypto (BTC-USDT)
+GET /market/news/{symbol}           → noticias recientes
+GET /market/macro                   → indicadores macro FRED
+GET /analysis/signal/{symbol}       → señal AI completa (news + macro)
+GET /health                         → estado de la API y Redis
+GET /metrics                        → métricas Prometheus
+```
+
+---
+
+## Ramas del Equipo
+
+| Rama | Responsabilidad |
 |---|---|
-| Lenguaje | Python 3.11+ |
-| AI | Claude (Anthropic API) |
-| Hub de datos | OpenBB Platform 4.x |
-| Data feeds | Alpaca (stocks US), Finnhub WS, Binance (CCXT), FRED |
-| Motor de ejecución | nautilus_trader (Python/Rust) |
-| Event bus / Cache | Redis Pub/Sub |
-| API interna | FastAPI + Uvicorn |
-| Métricas | Prometheus + Grafana |
-| Análisis técnico | pandas-ta |
-| Performance analytics | pyfolio-reloaded + quantstats |
-| Logging | Loguru |
-| Contenedores | Docker Compose |
+| `backend` | API FastAPI, data pipeline, AI agents, infra Docker |
+| `feature/frontend` | Dashboard web que consume la API |
+| `feature/data-pipeline` | Nuevos conectores de datos |
+| `feature/ai-agents` | Nuevos agentes Claude, mejoras de prompts |
+
+Reglas: nunca pushear a `main` directo. Todo via PR. `.env` nunca se commitea.
 
 ---
 
-## Guía de Implementación (4 Semanas)
+## Roadmap
 
-| Semana | Objetivo |
+| Fase | Objetivo |
 |---|---|
-| 1 | Data Pipeline — OpenBB + CCXT + Alpaca + Finnhub conectados y verificados |
-| 2 | Backtesting Engine — primera estrategia SMA Crossover con nautilus_trader |
-| 3 | ML Signals — features + XGBoost baseline, integrado al backtester |
-| 4 | Dashboard & Live — Grafana + paper trading en Alpaca |
+| 1 — Data Pipeline | Conectar todas las APIs, verificar endpoints con datos reales |
+| 2 — AI Signals | Afinar prompts de agentes Claude, agregar análisis técnico (pandas-ta) |
+| 3 — Frontend | Dashboard web que consuma la API — cotizaciones, noticias, señales AI |
+| 4 — Visualización avanzada | Dashboards Grafana con feeds de precios y métricas de mercado |
 
 ---
 
-*Aura Terminal — Built for speed. Designed for scale.*
+*Aura Terminal — Terminal Bloomberg open source con IA integrada.*
 *Aura Investments · Departamento de Investigación y Desarrollo · 2026*
