@@ -1,13 +1,7 @@
 import { useMemo } from 'react'
 import {
-  TrendingUp,
-  TrendingDown,
-  Activity,
-  BarChart3,
-  Eye,
   ArrowUpRight,
   ArrowDownRight,
-  Flame,
 } from 'lucide-react'
 import { useMarketStore } from '@/stores/market-store'
 import { useWorkspaceStore } from '@/stores/workspace-store'
@@ -15,7 +9,6 @@ import { MarketCard } from '@/components/market/MarketCard'
 import { DataPanel } from '@/components/shared/DataPanel'
 import { MetricCard } from '@/components/shared/MetricCard'
 import { SparklineChart } from '@/components/charts/SparklineChart'
-import { StatusBadge } from '@/components/shared/StatusBadge'
 import { cn } from '@/lib/utils'
 import { formatNumber, formatPercent, formatVolume } from '@/lib/format'
 

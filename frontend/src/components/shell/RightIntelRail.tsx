@@ -1,12 +1,8 @@
 import { useState } from 'react'
 import {
   Brain,
-  Bell,
-  Newspaper,
   ChevronRight,
   ChevronLeft,
-  TrendingUp,
-  TrendingDown,
   AlertTriangle,
   Zap,
 } from 'lucide-react'

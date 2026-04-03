@@ -1,16 +1,15 @@
-import { useEffect, useRef, useMemo, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Star, GitCompare, Bot, Bell, Play,
-  ArrowUpRight, ArrowDownRight,
 } from 'lucide-react'
-import { createChart, type IChartApi, type ISeriesApi, ColorType } from 'lightweight-charts'
+import { createChart, type IChartApi, type Time, ColorType, CandlestickSeries, HistogramSeries } from 'lightweight-charts'
 import { useMarketStore } from '@/stores/market-store'
 import { DataPanel } from '@/components/shared/DataPanel'
 import { MetricCard } from '@/components/shared/MetricCard'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { PriceChange } from '@/components/shared/PriceChange'
 import { cn } from '@/lib/utils'
-import { formatNumber, formatPercent, formatVolume } from '@/lib/format'
+import { formatNumber, formatVolume } from '@/lib/format'
 import { getOHLCForTimeframe } from '@/data/generators/ohlc-generator'
 import { MOCK_SIGNALS } from '@/data/mock-signals'
 import { ASSET_EXCHANGES, INITIAL_ASSETS } from '@/data/generators/price-ticker'
@@ -33,8 +32,6 @@ export function AssetDetailPage({ symbol }: AssetDetailPageProps) {
       </div>
     )
   }
-
-  const isUp = asset.changePercent >= 0
 
   return (
     <div className="h-full flex flex-col gap-3 p-3">
@@ -255,7 +252,7 @@ function CandlestickChartView({ symbol, price, timeframe }: { symbol: string; pr
       timeScale: { borderColor: theme.colors.border, timeVisible: true },
     })
 
-    const candleSeries = chart.addCandlestickSeries({
+    const candleSeries = chart.addSeries(CandlestickSeries, {
       upColor: theme.chart.upColor,
       downColor: theme.chart.downColor,
       borderUpColor: theme.chart.upColor,
@@ -265,9 +262,9 @@ function CandlestickChartView({ symbol, price, timeframe }: { symbol: string; pr
     })
 
     const data = getOHLCForTimeframe(price, timeframe, 200, volatility)
-    candleSeries.setData(data)
+    candleSeries.setData(data.map((bar) => ({ ...bar, time: bar.time as Time })))
 
-    const volumeSeries = chart.addHistogramSeries({
+    const volumeSeries = chart.addSeries(HistogramSeries, {
       priceFormat: { type: 'volume' },
       priceScaleId: 'volume',
     })
@@ -278,7 +275,7 @@ function CandlestickChartView({ symbol, price, timeframe }: { symbol: string; pr
 
     volumeSeries.setData(
       data.map((bar) => ({
-        time: bar.time,
+        time: bar.time as Time,
         value: bar.volume,
         color: bar.close >= bar.open ? theme.chart.volumeUp : theme.chart.volumeDown,
       })),

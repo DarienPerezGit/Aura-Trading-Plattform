@@ -119,11 +119,8 @@ export function AICopilotPage() {
     // Simulate typing delay
     const response = getAIResponse(query)
     const words = response.split(' ')
-    let accumulated = ''
-
     for (let i = 0; i < words.length; i += 3) {
       await new Promise((r) => setTimeout(r, 50))
-      accumulated = words.slice(0, i + 3).join(' ')
     }
 
     addMessage({ role: 'assistant', content: response })

@@ -6,7 +6,6 @@ import {
   Terminal,
   ChevronDown,
   ChevronUp,
-  X,
 } from 'lucide-react'
 import { useUIStore } from '@/stores/ui-store'
 import { cn } from '@/lib/utils'

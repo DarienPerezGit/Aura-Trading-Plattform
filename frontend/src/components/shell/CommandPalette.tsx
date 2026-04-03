@@ -4,7 +4,6 @@ import {
   TrendingUp,
   BarChart3,
   Bot,
-  Bell,
   LayoutDashboard,
   Globe,
   Newspaper,
@@ -14,7 +13,6 @@ import {
 } from 'lucide-react'
 import { useUIStore } from '@/stores/ui-store'
 import { useWorkspaceStore } from '@/stores/workspace-store'
-import { cn } from '@/lib/utils'
 import { ASSET_NAMES } from '@/data/generators/price-ticker'
 
 interface CommandItem {
