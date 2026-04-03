@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+/* ============================================================
+   FENIX — Tema Dark Institucional
+   ============================================================ */
+
+@theme {
+  /* Colores base */
+  --color-fenix-bg: #0a0a0f;
+  --color-fenix-panel: #111118;
+  --color-fenix-card: #16161f;
+  --color-fenix-card-hover: #1c1c28;
+  --color-fenix-border: #1e1e2e;
+  --color-fenix-border-light: #2a2a3e;
+
+  /* Texto */
+  --color-fenix-text: #e4e4ef;
+  --color-fenix-text-secondary: #6b6b80;
+  --color-fenix-text-muted: #4a4a5e;
+
+  /* Acentos */
+  --color-fenix-accent: #3b82f6;
+  --color-fenix-accent-hover: #2563eb;
+  --color-fenix-ai: #8b5cf6;
+  --color-fenix-ai-hover: #7c3aed;
+
+  /* Estados de mercado */
+  --color-fenix-bullish: #22c55e;
+  --color-fenix-bearish: #ef4444;
+  --color-fenix-warning: #f59e0b;
+  --color-fenix-neutral: #6b7280;
+
+  /* Fondos funcionales */
+  --color-fenix-bullish-bg: #22c55e15;
+  --color-fenix-bearish-bg: #ef444415;
+  --color-fenix-warning-bg: #f59e0b15;
+  --color-fenix-accent-bg: #3b82f615;
+  --color-fenix-ai-bg: #8b5cf615;
+
+  /* Fonts */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+}
+
+/* ============================================================
+   Base Styles
+   ============================================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--color-fenix-bg);
+  color: var(--color-fenix-text);
+  font-family: var(--font-sans);
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+#root {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* ============================================================
+   Scrollbar Custom (estilo terminal)
+   ============================================================ */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-fenix-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-fenix-border-light);
+}
+
+/* ============================================================
+   Utilities
+   ============================================================ */
+
+@utility glow-accent {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+}
+
+@utility glow-ai {
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+}
+
+@utility glow-bullish {
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.2);
+}
+
+@utility glow-bearish {
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
+}
+
+@utility panel {
+  background-color: var(--color-fenix-panel);
+  border: 1px solid var(--color-fenix-border);
+  border-radius: 8px;
+}
+
+@utility panel-card {
+  background-color: var(--color-fenix-card);
+  border: 1px solid var(--color-fenix-border);
+  border-radius: 6px;
+}
+
+/* Google Fonts import */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
