@@ -97,20 +97,20 @@ export function CommandPalette() {
 
       {/* Dialog */}
       <div
-        className="relative w-full max-w-lg bg-fenix-panel border border-fenix-border rounded-xl shadow-2xl overflow-hidden"
+        className="relative w-full max-w-lg bg-aura-panel border border-aura-border rounded-xl shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search Input */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-fenix-border">
-          <Search className="w-4 h-4 text-fenix-text-muted shrink-0" />
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-aura-border">
+          <Search className="w-4 h-4 text-aura-text-muted shrink-0" />
           <input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar activo, comando, pagina..."
-            className="flex-1 bg-transparent text-sm text-fenix-text placeholder:text-fenix-text-muted outline-none"
+            className="flex-1 bg-transparent text-sm text-aura-text placeholder:text-aura-text-muted outline-none"
           />
-          <kbd className="text-[10px] bg-fenix-card border border-fenix-border rounded px-1.5 py-0.5 text-fenix-text-muted">
+          <kbd className="text-[10px] bg-aura-card border border-aura-border rounded px-1.5 py-0.5 text-aura-text-muted">
             ESC
           </kbd>
         </div>
@@ -119,7 +119,7 @@ export function CommandPalette() {
         <div className="max-h-[320px] overflow-y-auto p-2">
           {Object.entries(grouped).map(([category, items]) => (
             <div key={category} className="mb-2">
-              <div className="text-[10px] font-semibold uppercase text-fenix-text-muted px-2 py-1">
+              <div className="text-[10px] font-semibold uppercase text-aura-text-muted px-2 py-1">
                 {category}
               </div>
               {items.slice(0, 8).map((item) => {
@@ -131,7 +131,7 @@ export function CommandPalette() {
                       item.action()
                       setCommandPaletteOpen(false)
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-fenix-text-secondary hover:text-fenix-text hover:bg-fenix-card transition-colors cursor-pointer"
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-aura-text-secondary hover:text-aura-text hover:bg-aura-card transition-colors cursor-pointer"
                   >
                     <Icon className="w-4 h-4 shrink-0" />
                     <span>{item.label}</span>
@@ -141,7 +141,7 @@ export function CommandPalette() {
             </div>
           ))}
           {filtered.length === 0 && (
-            <div className="text-center py-8 text-fenix-text-muted text-xs">
+            <div className="text-center py-8 text-aura-text-muted text-xs">
               Sin resultados para "{query}"
             </div>
           )}

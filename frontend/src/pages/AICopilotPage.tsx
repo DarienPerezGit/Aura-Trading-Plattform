@@ -136,12 +136,12 @@ export function AICopilotPage() {
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full gap-6">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-fenix-ai-bg flex items-center justify-center">
-                  <Bot className="w-6 h-6 text-fenix-ai" />
+                <div className="w-12 h-12 rounded-xl bg-aura-ai-bg flex items-center justify-center">
+                  <Bot className="w-6 h-6 text-aura-ai" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-fenix-text">FENIX AI Copilot</h2>
-                  <p className="text-xs text-fenix-text-secondary">
+                  <h2 className="text-lg font-semibold text-aura-text">FENIX AI Copilot</h2>
+                  <p className="text-xs text-aura-text-secondary">
                     Tu analista senior embebido en la terminal
                   </p>
                 </div>
@@ -154,10 +154,10 @@ export function AICopilotPage() {
                     <button
                       key={prompt.text}
                       onClick={() => handleSend(prompt.text)}
-                      className="panel-card p-3 text-left hover:bg-fenix-card-hover transition-all cursor-pointer group"
+                      className="panel-card p-3 text-left hover:bg-aura-card-hover transition-all cursor-pointer group"
                     >
-                      <Icon className="w-4 h-4 text-fenix-ai mb-1.5 group-hover:text-fenix-ai-hover" />
-                      <span className="text-xs text-fenix-text-secondary group-hover:text-fenix-text">
+                      <Icon className="w-4 h-4 text-aura-ai mb-1.5 group-hover:text-aura-ai-hover" />
+                      <span className="text-xs text-aura-text-secondary group-hover:text-aura-text">
                         {prompt.text}
                       </span>
                     </button>
@@ -173,14 +173,14 @@ export function AICopilotPage() {
 
           {isGenerating && (
             <div className="flex items-start gap-3 px-4">
-              <div className="w-7 h-7 rounded-lg bg-fenix-ai-bg flex items-center justify-center shrink-0">
-                <Bot className="w-4 h-4 text-fenix-ai" />
+              <div className="w-7 h-7 rounded-lg bg-aura-ai-bg flex items-center justify-center shrink-0">
+                <Bot className="w-4 h-4 text-aura-ai" />
               </div>
               <div className="panel-card p-3">
                 <div className="flex gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-fenix-ai animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-fenix-ai animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-fenix-ai animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-aura-ai animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-aura-ai animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-aura-ai animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
             </div>
@@ -197,13 +197,13 @@ export function AICopilotPage() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               placeholder="Pregunta sobre mercados, activos, estrategias..."
-              className="flex-1 bg-fenix-card border border-fenix-border rounded-lg px-4 py-2.5 text-sm text-fenix-text placeholder:text-fenix-text-muted outline-none focus:border-fenix-ai transition-colors"
+              className="flex-1 bg-aura-card border border-aura-border rounded-lg px-4 py-2.5 text-sm text-aura-text placeholder:text-aura-text-muted outline-none focus:border-aura-ai transition-colors"
               disabled={isGenerating}
             />
             <button
               onClick={() => handleSend()}
               disabled={!input.trim() || isGenerating}
-              className="p-2.5 rounded-lg bg-fenix-ai text-white hover:bg-fenix-ai-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              className="p-2.5 rounded-lg bg-aura-ai text-white hover:bg-aura-ai-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
             >
               <Send className="w-4 h-4" />
             </button>
@@ -224,7 +224,7 @@ export function AICopilotPage() {
               <button
                 key={label}
                 onClick={action}
-                className="w-full flex items-center gap-2 px-2.5 py-2 rounded text-xs text-fenix-text-secondary hover:text-fenix-text hover:bg-fenix-card transition-colors cursor-pointer"
+                className="w-full flex items-center gap-2 px-2.5 py-2 rounded text-xs text-aura-text-secondary hover:text-aura-text hover:bg-aura-card transition-colors cursor-pointer"
               >
                 <Icon className="w-3.5 h-3.5" />
                 {label}
@@ -239,13 +239,13 @@ export function AICopilotPage() {
               <button
                 key={signal.id}
                 onClick={() => navigate(`/activo/${signal.symbol}`)}
-                className="w-full panel-card p-2 text-left hover:bg-fenix-card-hover transition-all cursor-pointer"
+                className="w-full panel-card p-2 text-left hover:bg-aura-card-hover transition-all cursor-pointer"
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-semibold text-fenix-text">{signal.symbol}</span>
+                  <span className="text-xs font-semibold text-aura-text">{signal.symbol}</span>
                   <StatusBadge status={signal.direction} />
                 </div>
-                <div className="text-[10px] text-fenix-text-muted">
+                <div className="text-[10px] text-aura-text-muted">
                   Confianza: {signal.confidence}%
                 </div>
               </button>
@@ -265,25 +265,25 @@ function MessageBubble({ message }: { message: AIMessage }) {
       <div
         className={cn(
           'w-7 h-7 rounded-lg flex items-center justify-center shrink-0',
-          isUser ? 'bg-fenix-accent-bg' : 'bg-fenix-ai-bg',
+          isUser ? 'bg-aura-accent-bg' : 'bg-aura-ai-bg',
         )}
       >
         {isUser ? (
-          <User className="w-4 h-4 text-fenix-accent" />
+          <User className="w-4 h-4 text-aura-accent" />
         ) : (
-          <Bot className="w-4 h-4 text-fenix-ai" />
+          <Bot className="w-4 h-4 text-aura-ai" />
         )}
       </div>
       <div
         className={cn(
           'max-w-[70%] rounded-lg p-3',
-          isUser ? 'bg-fenix-accent-bg' : 'panel-card',
+          isUser ? 'bg-aura-accent-bg' : 'panel-card',
         )}
       >
-        <div className="text-xs text-fenix-text leading-relaxed whitespace-pre-line">
+        <div className="text-xs text-aura-text leading-relaxed whitespace-pre-line">
           {message.content.split('**').map((part, i) =>
             i % 2 === 1 ? (
-              <strong key={i} className="text-fenix-text font-semibold">
+              <strong key={i} className="text-aura-text font-semibold">
                 {part}
               </strong>
             ) : (

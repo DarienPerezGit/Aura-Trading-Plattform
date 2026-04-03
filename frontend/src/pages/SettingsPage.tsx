@@ -4,8 +4,8 @@ export function SettingsPage() {
   return (
     <div className="h-full flex flex-col gap-3 p-3">
       <div className="panel p-3 shrink-0">
-        <h1 className="text-lg font-bold text-fenix-text">Configuracion</h1>
-        <p className="text-xs text-fenix-text-secondary mt-1">
+        <h1 className="text-lg font-bold text-aura-text">Configuracion</h1>
+        <p className="text-xs text-aura-text-secondary mt-1">
           Preferencias de la terminal y conexiones de datos
         </p>
       </div>
@@ -54,12 +54,12 @@ export function SettingsPage() {
 
 function SettingRow({ label, value, status }: { label: string; value: string; status?: string }) {
   return (
-    <div className="flex items-center justify-between py-1.5 border-b border-fenix-border/30 last:border-0">
-      <span className="text-xs text-fenix-text-secondary">{label}</span>
+    <div className="flex items-center justify-between py-1.5 border-b border-aura-border/30 last:border-0">
+      <span className="text-xs text-aura-text-secondary">{label}</span>
       <div className="flex items-center gap-2">
-        <span className="text-xs font-mono text-fenix-text">{value}</span>
+        <span className="text-xs font-mono text-aura-text">{value}</span>
         {status && (
-          <span className={`text-[9px] px-1.5 py-0.5 rounded ${status === 'conectado' ? 'bg-fenix-bullish/15 text-fenix-bullish' : 'bg-fenix-bearish/15 text-fenix-bearish'}`}>
+          <span className={`text-[9px] px-1.5 py-0.5 rounded ${status === 'conectado' ? 'bg-aura-bullish/15 text-aura-bullish' : 'bg-aura-bearish/15 text-aura-bearish'}`}>
             {status}
           </span>
         )}

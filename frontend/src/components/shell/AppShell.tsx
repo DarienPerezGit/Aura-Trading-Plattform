@@ -11,7 +11,7 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   return (
-    <div className="h-screen w-screen flex flex-col bg-fenix-bg overflow-hidden">
+    <div className="h-screen w-screen flex flex-col bg-aura-bg overflow-hidden">
       {/* Top Command Bar */}
       <TopCommandBar />
 

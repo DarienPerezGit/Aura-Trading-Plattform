@@ -14,17 +14,17 @@ export function MetricCard({ label, value, subValue, icon, trend, className }: M
   return (
     <div className={cn('panel-card p-3 flex flex-col gap-1', className)}>
       <div className="flex items-center justify-between">
-        <span className="text-[10px] uppercase font-medium text-fenix-text-muted tracking-wider">
+        <span className="text-[10px] uppercase font-medium text-aura-text-muted tracking-wider">
           {label}
         </span>
-        {icon && <span className="text-fenix-text-muted">{icon}</span>}
+        {icon && <span className="text-aura-text-muted">{icon}</span>}
       </div>
       <div
         className={cn(
           'text-lg font-semibold font-mono',
-          trend === 'up' && 'text-fenix-bullish',
-          trend === 'down' && 'text-fenix-bearish',
-          !trend && 'text-fenix-text',
+          trend === 'up' && 'text-aura-bullish',
+          trend === 'down' && 'text-aura-bearish',
+          !trend && 'text-aura-text',
         )}
       >
         {value}
@@ -33,9 +33,9 @@ export function MetricCard({ label, value, subValue, icon, trend, className }: M
         <span
           className={cn(
             'text-[11px] font-mono',
-            trend === 'up' && 'text-fenix-bullish',
-            trend === 'down' && 'text-fenix-bearish',
-            !trend && 'text-fenix-text-secondary',
+            trend === 'up' && 'text-aura-bullish',
+            trend === 'down' && 'text-aura-bearish',
+            !trend && 'text-aura-text-secondary',
           )}
         >
           {subValue}

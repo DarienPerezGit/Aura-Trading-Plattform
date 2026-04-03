@@ -1,58 +1,51 @@
+import type { LucideIcon } from 'lucide-react'
 import {
   LayoutDashboard,
   BarChart3,
   TrendingUp,
   Wallet,
-  Brain,
+  Bot,
   Zap,
+  Brain,
   Globe,
   Newspaper,
-  Bot,
   Settings,
-  PanelLeftClose,
-  PanelLeft,
 } from 'lucide-react'
-import { useUIStore } from '@/stores/ui-store'
 import { useWorkspaceStore } from '@/stores/workspace-store'
 import { cn } from '@/lib/utils'
 
-const ICON_MAP = {
-  LayoutDashboard,
-  BarChart3,
-  TrendingUp,
-  Wallet,
-  Brain,
-  Zap,
-  Globe,
-  Newspaper,
-  Bot,
-  Settings,
-} as const
+interface NavItem {
+  id: string
+  label: string
+  icon: LucideIcon
+  path: string
+}
 
-const NAV_ITEMS = [
-  { id: 'command-center', label: 'Centro de Comando', icon: 'LayoutDashboard', path: '/' },
-  { id: 'markets', label: 'Mercados', icon: 'BarChart3', path: '/mercados' },
-  { id: 'assets', label: 'Activos', icon: 'TrendingUp', path: '/activo/AAPL' },
-  { id: 'portfolio', label: 'Portafolio', icon: 'Wallet', path: '/portafolio' },
-  { id: 'strategies', label: 'Estrategias', icon: 'Brain', path: '/estrategias' },
-  { id: 'signals', label: 'Senales', icon: 'Zap', path: '/senales' },
-  { id: 'geo', label: 'Geo Inteligencia', icon: 'Globe', path: '/geo' },
-  { id: 'news', label: 'Noticias', icon: 'Newspaper', path: '/noticias' },
-  { id: 'ai-copilot', label: 'AI Copilot', icon: 'Bot', path: '/ai' },
-] as const
+const CORE_NAV: NavItem[] = [
+  { id: 'command-center', label: 'Command Center', icon: LayoutDashboard, path: '/' },
+  { id: 'markets', label: 'Markets', icon: BarChart3, path: '/mercados' },
+  { id: 'assets', label: 'Assets', icon: TrendingUp, path: '/activos' },
+  { id: 'portfolio', label: 'Portfolio', icon: Wallet, path: '/portafolio' },
+]
 
-const BOTTOM_ITEMS = [
-  { id: 'settings', label: 'Configuracion', icon: 'Settings', path: '/configuracion' },
-] as const
+const INTEL_NAV: NavItem[] = [
+  { id: 'ai-copilot', label: 'AI Copilot', icon: Bot, path: '/ai' },
+  { id: 'signals', label: 'Signals', icon: Zap, path: '/senales' },
+  { id: 'strategy-lab', label: 'Strategy Lab', icon: Brain, path: '/estrategias' },
+  { id: 'geo-intel', label: 'Geo Intel', icon: Globe, path: '/geo' },
+  { id: 'news', label: 'News', icon: Newspaper, path: '/noticias' },
+]
+
+const UTILITY_NAV: NavItem[] = [
+  { id: 'settings', label: 'Settings', icon: Settings, path: '/configuracion' },
+]
 
 export function LeftNavRail() {
-  const { sidebarCollapsed, toggleSidebar } = useUIStore()
   const { currentView, navigate } = useWorkspaceStore()
 
-  const renderItem = (item: (typeof NAV_ITEMS)[number] | (typeof BOTTOM_ITEMS)[number]) => {
-    const IconComponent = ICON_MAP[item.icon as keyof typeof ICON_MAP]
+  const renderItem = (item: NavItem) => {
+    const Icon = item.icon
     const isActive = currentView === item.path
-    const isAI = item.id === 'ai-copilot'
 
     return (
       <button
@@ -60,67 +53,50 @@ export function LeftNavRail() {
         onClick={() => navigate(item.path)}
         title={item.label}
         className={cn(
-          'flex items-center gap-3 rounded-lg transition-all cursor-pointer group',
-          sidebarCollapsed ? 'w-10 h-10 justify-center' : 'w-full px-3 py-2',
+          'relative w-10 h-10 flex items-center justify-center rounded-md transition-colors cursor-pointer group',
           isActive
-            ? isAI
-              ? 'bg-fenix-ai-bg text-fenix-ai'
-              : 'bg-fenix-accent-bg text-fenix-accent'
-            : 'text-fenix-text-secondary hover:text-fenix-text hover:bg-fenix-card',
+            ? 'bg-aura-accent-bg text-aura-accent'
+            : 'text-aura-text-secondary hover:text-aura-text hover:bg-aura-card',
         )}
       >
-        <IconComponent
-          className={cn(
-            'w-4.5 h-4.5 shrink-0',
-            isActive && isAI && 'text-fenix-ai',
-          )}
-        />
-        {!sidebarCollapsed && (
-          <span className="text-xs font-medium whitespace-nowrap">{item.label}</span>
-        )}
+        {/* Active left border indicator */}
         {isActive && (
-          <div
-            className={cn(
-              'absolute left-0 w-0.5 h-6 rounded-r',
-              isAI ? 'bg-fenix-ai' : 'bg-fenix-accent',
-            )}
-          />
+          <span className="absolute left-0 top-2 bottom-2 w-[2px] rounded-r bg-aura-accent" />
         )}
+        <Icon className="w-[18px] h-[18px]" />
+        {/* Tooltip */}
+        <span className="absolute left-full ml-2 px-2 py-1 rounded bg-aura-card text-aura-text text-xs font-medium whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 shadow-lg border border-aura-border">
+          {item.label}
+        </span>
       </button>
     )
   }
 
+  const renderBlock = (items: NavItem[]) => (
+    <div className="flex flex-col items-center gap-1 py-2">
+      {items.map(renderItem)}
+    </div>
+  )
+
   return (
-    <nav
-      className={cn(
-        'bg-fenix-panel border-r border-fenix-border flex flex-col shrink-0 transition-all duration-200',
-        sidebarCollapsed ? 'w-14' : 'w-48',
-      )}
-    >
-      {/* Toggle */}
-      <div className={cn('flex items-center p-2', sidebarCollapsed ? 'justify-center' : 'justify-end')}>
-        <button
-          onClick={toggleSidebar}
-          className="p-1.5 rounded hover:bg-fenix-card text-fenix-text-muted hover:text-fenix-text transition-colors cursor-pointer"
-          title={sidebarCollapsed ? 'Expandir' : 'Colapsar'}
-        >
-          {sidebarCollapsed ? (
-            <PanelLeft className="w-4 h-4" />
-          ) : (
-            <PanelLeftClose className="w-4 h-4" />
-          )}
-        </button>
-      </div>
+    <nav className="w-14 bg-aura-panel border-r border-aura-border flex flex-col shrink-0">
+      {/* Block 1 - Core Navigation */}
+      {renderBlock(CORE_NAV)}
 
-      {/* Main nav */}
-      <div className="flex-1 flex flex-col gap-1 px-2 relative">
-        {NAV_ITEMS.map(renderItem)}
-      </div>
+      <div className="mx-3 border-t border-aura-border" />
 
-      {/* Bottom */}
-      <div className="flex flex-col gap-1 px-2 pb-3 border-t border-fenix-border pt-2 mt-2">
-        {BOTTOM_ITEMS.map(renderItem)}
-      </div>
+      {/* Block 2 - Intelligence */}
+      {renderBlock(INTEL_NAV)}
+
+      <div className="mx-3 border-t border-aura-border" />
+
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      <div className="mx-3 border-t border-aura-border" />
+
+      {/* Block 3 - Utility */}
+      {renderBlock(UTILITY_NAV)}
     </nav>
   )
 }

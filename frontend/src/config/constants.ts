@@ -2,10 +2,12 @@ export const TIMEFRAMES = ['1m', '5m', '15m', '1h', '4h', '1D', '1W'] as const
 export type Timeframe = (typeof TIMEFRAMES)[number]
 
 export const MARKET_TABS = [
-  { id: 'equities', label: 'Acciones' },
+  { id: 'global', label: 'Global' },
+  { id: 'equities', label: 'Equities' },
   { id: 'crypto', label: 'Crypto' },
   { id: 'forex', label: 'Forex' },
   { id: 'macro', label: 'Macro' },
+  { id: 'signals', label: 'Signals' },
 ] as const
 
 export const NAV_ITEMS = [

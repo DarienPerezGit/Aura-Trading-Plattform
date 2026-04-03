@@ -46,12 +46,12 @@ export function BottomConsole() {
   return (
     <div
       className={cn(
-        'bg-fenix-panel border-t border-fenix-border flex flex-col shrink-0 transition-all duration-200',
+        'bg-aura-panel border-t border-aura-border flex flex-col shrink-0 transition-all duration-200',
         bottomConsoleOpen ? 'h-48' : 'h-8',
       )}
     >
       {/* Tab Bar */}
-      <div className="h-8 flex items-center px-2 gap-1 shrink-0 border-b border-fenix-border">
+      <div className="h-8 flex items-center px-2 gap-1 shrink-0 border-b border-aura-border">
         {TAB_CONFIG.map((tab) => {
           const Icon = tab.icon
           return (
@@ -64,8 +64,8 @@ export function BottomConsole() {
               className={cn(
                 'flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-medium transition-all cursor-pointer',
                 activeTab === tab.id && bottomConsoleOpen
-                  ? 'bg-fenix-accent-bg text-fenix-accent'
-                  : 'text-fenix-text-muted hover:text-fenix-text-secondary',
+                  ? 'bg-aura-accent-bg text-aura-accent'
+                  : 'text-aura-text-muted hover:text-aura-text-secondary',
               )}
             >
               <Icon className="w-3 h-3" />
@@ -78,7 +78,7 @@ export function BottomConsole() {
 
         <button
           onClick={toggleBottomConsole}
-          className="p-1 rounded hover:bg-fenix-card text-fenix-text-muted cursor-pointer"
+          className="p-1 rounded hover:bg-aura-card text-aura-text-muted cursor-pointer"
         >
           {bottomConsoleOpen ? (
             <ChevronDown className="w-3.5 h-3.5" />
@@ -95,31 +95,31 @@ export function BottomConsole() {
             events.map((event) => (
               <div
                 key={event.id}
-                className="flex items-center gap-2 px-2 py-0.5 hover:bg-fenix-card/50 rounded"
+                className="flex items-center gap-2 px-2 py-0.5 hover:bg-aura-card/50 rounded"
               >
-                <span className="text-fenix-text-muted w-16 shrink-0">
+                <span className="text-aura-text-muted w-16 shrink-0">
                   {formatTime(event.timestamp)}
                 </span>
                 <span
                   className={cn(
                     'w-14 shrink-0 text-[10px] font-medium uppercase',
-                    event.type === 'alerta' && 'text-fenix-warning',
-                    event.type === 'senal' && 'text-fenix-ai',
-                    event.type === 'orden' && 'text-fenix-accent',
-                    event.type === 'mercado' && 'text-fenix-bullish',
-                    event.type === 'sistema' && 'text-fenix-text-muted',
+                    event.type === 'alerta' && 'text-aura-warning',
+                    event.type === 'senal' && 'text-aura-ai',
+                    event.type === 'orden' && 'text-aura-accent',
+                    event.type === 'mercado' && 'text-aura-bullish',
+                    event.type === 'sistema' && 'text-aura-text-muted',
                   )}
                 >
                   {event.type}
                 </span>
                 {event.symbol && (
-                  <span className="text-fenix-accent w-10 shrink-0">{event.symbol}</span>
+                  <span className="text-aura-accent w-10 shrink-0">{event.symbol}</span>
                 )}
                 <span
                   className={cn(
-                    'text-fenix-text-secondary',
-                    event.severity === 'critical' && 'text-fenix-bearish',
-                    event.severity === 'warning' && 'text-fenix-warning',
+                    'text-aura-text-secondary',
+                    event.severity === 'critical' && 'text-aura-bearish',
+                    event.severity === 'warning' && 'text-aura-warning',
                   )}
                 >
                   {event.message}
@@ -128,13 +128,13 @@ export function BottomConsole() {
             ))}
 
           {activeTab === 'ordenes' && (
-            <div className="flex items-center justify-center h-full text-fenix-text-muted text-xs">
+            <div className="flex items-center justify-center h-full text-aura-text-muted text-xs">
               No hay ordenes recientes
             </div>
           )}
 
           {activeTab === 'alertas' && (
-            <div className="flex items-center justify-center h-full text-fenix-text-muted text-xs">
+            <div className="flex items-center justify-center h-full text-aura-text-muted text-xs">
               Las alertas apareceran aqui
             </div>
           )}
@@ -158,20 +158,20 @@ export function BottomConsole() {
 function LogLine({ level, msg }: { level: string; msg: string }) {
   return (
     <div className="flex items-center gap-2 px-2 py-0.5">
-      <span className="text-fenix-text-muted w-16 shrink-0">
+      <span className="text-aura-text-muted w-16 shrink-0">
         {formatTime(new Date())}
       </span>
       <span
         className={cn(
           'w-10 shrink-0 text-[10px] font-bold',
-          level === 'INFO' && 'text-fenix-bullish',
-          level === 'WARN' && 'text-fenix-warning',
-          level === 'ERROR' && 'text-fenix-bearish',
+          level === 'INFO' && 'text-aura-bullish',
+          level === 'WARN' && 'text-aura-warning',
+          level === 'ERROR' && 'text-aura-bearish',
         )}
       >
         {level}
       </span>
-      <span className="text-fenix-text-secondary">{msg}</span>
+      <span className="text-aura-text-secondary">{msg}</span>
     </div>
   )
 }

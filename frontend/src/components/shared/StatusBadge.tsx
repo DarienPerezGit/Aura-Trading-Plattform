@@ -6,16 +6,16 @@ interface StatusBadgeProps {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  bullish: 'bg-fenix-bullish-bg text-fenix-bullish',
-  bearish: 'bg-fenix-bearish-bg text-fenix-bearish',
-  neutral: 'bg-fenix-card text-fenix-text-muted',
-  live: 'bg-fenix-bullish-bg text-fenix-bullish',
-  delayed: 'bg-fenix-warning-bg text-fenix-warning',
-  ai: 'bg-fenix-ai-bg text-fenix-ai',
-  anomaly: 'bg-fenix-bearish-bg text-fenix-bearish',
-  compra: 'bg-fenix-bullish-bg text-fenix-bullish',
-  venta: 'bg-fenix-bearish-bg text-fenix-bearish',
-  mantener: 'bg-fenix-warning-bg text-fenix-warning',
+  bullish: 'bg-aura-bullish-bg text-aura-bullish',
+  bearish: 'bg-aura-bearish-bg text-aura-bearish',
+  neutral: 'bg-aura-card text-aura-text-muted',
+  live: 'bg-aura-bullish-bg text-aura-bullish',
+  delayed: 'bg-aura-warning-bg text-aura-warning',
+  ai: 'bg-aura-ai-bg text-aura-ai',
+  anomaly: 'bg-aura-bearish-bg text-aura-bearish',
+  compra: 'bg-aura-bullish-bg text-aura-bullish',
+  venta: 'bg-aura-bearish-bg text-aura-bearish',
+  mantener: 'bg-aura-warning-bg text-aura-warning',
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -41,7 +41,7 @@ export function StatusBadge({ status, size = 'sm' }: StatusBadgeProps) {
       )}
     >
       {status === 'live' && (
-        <span className="w-1.5 h-1.5 rounded-full bg-fenix-bullish mr-1 animate-pulse" />
+        <span className="w-1.5 h-1.5 rounded-full bg-aura-bullish mr-1 animate-pulse" />
       )}
       {STATUS_LABELS[status]}
     </span>

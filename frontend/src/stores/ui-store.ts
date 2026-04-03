@@ -21,7 +21,7 @@ export const useUIStore = create<UIState>((set) => ({
   bottomConsoleOpen: true,
   bottomConsoleHeight: 200,
   commandPaletteOpen: false,
-  activeMarketTab: 'equities',
+  activeMarketTab: 'global',
 
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
   toggleRightRail: () => set((s) => ({ rightRailOpen: !s.rightRailOpen })),

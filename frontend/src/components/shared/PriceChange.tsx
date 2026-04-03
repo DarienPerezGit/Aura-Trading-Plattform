@@ -38,10 +38,10 @@ export function PriceChange({
         'inline-flex items-center gap-1 font-mono',
         sizeClasses[size],
         isNeutral
-          ? 'text-fenix-neutral'
+          ? 'text-aura-neutral'
           : isPositive
-            ? 'text-fenix-bullish'
-            : 'text-fenix-bearish',
+            ? 'text-aura-bullish'
+            : 'text-aura-bearish',
       )}
     >
       {showIcon && (

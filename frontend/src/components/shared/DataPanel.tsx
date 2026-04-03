@@ -14,11 +14,11 @@ export function DataPanel({ title, subtitle, actions, children, className, noPad
   return (
     <div className={cn('panel flex flex-col', className)}>
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-fenix-border shrink-0">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-aura-border shrink-0">
         <div>
-          <h3 className="text-xs font-semibold text-fenix-text">{title}</h3>
+          <h3 className="text-xs font-semibold text-aura-text">{title}</h3>
           {subtitle && (
-            <span className="text-[10px] text-fenix-text-muted">{subtitle}</span>
+            <span className="text-[10px] text-aura-text-muted">{subtitle}</span>
           )}
         </div>
         {actions && <div className="flex items-center gap-1">{actions}</div>}

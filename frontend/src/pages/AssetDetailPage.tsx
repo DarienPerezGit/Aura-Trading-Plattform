@@ -27,7 +27,7 @@ export function AssetDetailPage({ symbol }: AssetDetailPageProps) {
 
   if (!asset) {
     return (
-      <div className="h-full flex items-center justify-center text-fenix-text-muted">
+      <div className="h-full flex items-center justify-center text-aura-text-muted">
         Cargando {symbol}...
       </div>
     )
@@ -40,16 +40,16 @@ export function AssetDetailPage({ symbol }: AssetDetailPageProps) {
         <div className="flex items-center gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-fenix-text">{asset.symbol}</h1>
-              <span className="text-sm text-fenix-text-secondary">{asset.name}</span>
-              <span className="text-[10px] bg-fenix-card px-1.5 py-0.5 rounded text-fenix-text-muted">
+              <h1 className="text-xl font-bold text-aura-text">{asset.symbol}</h1>
+              <span className="text-sm text-aura-text-secondary">{asset.name}</span>
+              <span className="text-[10px] bg-aura-card px-1.5 py-0.5 rounded text-aura-text-muted">
                 {ASSET_EXCHANGES[symbol] ?? 'N/A'}
               </span>
               <StatusBadge status="live" />
             </div>
           </div>
           <div className="flex items-center gap-3 ml-4">
-            <div className="text-2xl font-bold font-mono text-fenix-text">
+            <div className="text-2xl font-bold font-mono text-aura-text">
               ${formatNumber(asset.price)}
             </div>
             <PriceChange value={asset.change} percent={asset.changePercent} size="md" />
@@ -66,7 +66,7 @@ export function AssetDetailPage({ symbol }: AssetDetailPageProps) {
             <button
               key={label}
               title={label}
-              className="p-2 rounded hover:bg-fenix-card text-fenix-text-secondary hover:text-fenix-text transition-colors cursor-pointer"
+              className="p-2 rounded hover:bg-aura-card text-aura-text-secondary hover:text-aura-text transition-colors cursor-pointer"
             >
               <Icon className="w-4 h-4" />
             </button>
@@ -111,8 +111,8 @@ export function AssetDetailPage({ symbol }: AssetDetailPageProps) {
                 className={cn(
                   'px-2.5 py-1 rounded text-[11px] font-medium transition-all cursor-pointer',
                   timeframe === tf
-                    ? 'bg-fenix-accent-bg text-fenix-accent'
-                    : 'text-fenix-text-muted hover:text-fenix-text-secondary hover:bg-fenix-card',
+                    ? 'bg-aura-accent-bg text-aura-accent'
+                    : 'text-aura-text-muted hover:text-aura-text-secondary hover:bg-aura-card',
                 )}
               >
                 {tf}
@@ -131,38 +131,38 @@ export function AssetDetailPage({ symbol }: AssetDetailPageProps) {
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <StatusBadge status={signal.direction} size="md" />
-                  <span className="text-sm font-semibold text-fenix-text">
+                  <span className="text-sm font-semibold text-aura-text">
                     Confianza: {signal.confidence}%
                   </span>
                 </div>
-                <div className="w-full bg-fenix-card rounded-full h-2">
+                <div className="w-full bg-aura-card rounded-full h-2">
                   <div
                     className={cn(
                       'h-2 rounded-full',
-                      signal.direction === 'compra' ? 'bg-fenix-bullish' : signal.direction === 'venta' ? 'bg-fenix-bearish' : 'bg-fenix-warning',
+                      signal.direction === 'compra' ? 'bg-aura-bullish' : signal.direction === 'venta' ? 'bg-aura-bearish' : 'bg-aura-warning',
                     )}
                     style={{ width: `${signal.confidence}%` }}
                   />
                 </div>
                 <div>
-                  <span className="text-[10px] uppercase text-fenix-text-muted font-semibold">Analisis</span>
-                  <p className="text-xs text-fenix-text-secondary mt-1 leading-relaxed">
+                  <span className="text-[10px] uppercase text-aura-text-muted font-semibold">Analisis</span>
+                  <p className="text-xs text-aura-text-secondary mt-1 leading-relaxed">
                     {signal.rationale}
                   </p>
                 </div>
                 <div>
-                  <span className="text-[10px] uppercase text-fenix-text-muted font-semibold">Regimen</span>
-                  <p className="text-xs text-fenix-text mt-1">{signal.regime}</p>
+                  <span className="text-[10px] uppercase text-aura-text-muted font-semibold">Regimen</span>
+                  <p className="text-xs text-aura-text mt-1">{signal.regime}</p>
                 </div>
                 <div>
-                  <span className="text-[10px] uppercase text-fenix-text-muted font-semibold">Riesgo</span>
-                  <p className="text-xs text-fenix-warning mt-1">{signal.riskNote}</p>
+                  <span className="text-[10px] uppercase text-aura-text-muted font-semibold">Riesgo</span>
+                  <p className="text-xs text-aura-warning mt-1">{signal.riskNote}</p>
                 </div>
                 <div>
-                  <span className="text-[10px] uppercase text-fenix-text-muted font-semibold">Drivers</span>
+                  <span className="text-[10px] uppercase text-aura-text-muted font-semibold">Drivers</span>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {signal.drivers.map((d, i) => (
-                      <span key={i} className="text-[10px] bg-fenix-card px-2 py-0.5 rounded text-fenix-text-secondary">
+                      <span key={i} className="text-[10px] bg-aura-card px-2 py-0.5 rounded text-aura-text-secondary">
                         {d}
                       </span>
                     ))}
@@ -172,7 +172,7 @@ export function AssetDetailPage({ symbol }: AssetDetailPageProps) {
             </DataPanel>
           ) : (
             <DataPanel title="Analisis AI" className="flex-1">
-              <div className="flex items-center justify-center h-full text-fenix-text-muted text-xs">
+              <div className="flex items-center justify-center h-full text-aura-text-muted text-xs">
                 Sin senal activa para {symbol}
               </div>
             </DataPanel>
@@ -182,10 +182,10 @@ export function AssetDetailPage({ symbol }: AssetDetailPageProps) {
           <DataPanel title="Panel de Orden" subtitle="Simulado">
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
-                <button className="py-2 rounded bg-fenix-bullish/20 text-fenix-bullish text-xs font-semibold hover:bg-fenix-bullish/30 transition-colors cursor-pointer">
+                <button className="py-2 rounded bg-aura-bullish/20 text-aura-bullish text-xs font-semibold hover:bg-aura-bullish/30 transition-colors cursor-pointer">
                   COMPRA
                 </button>
-                <button className="py-2 rounded bg-fenix-bearish/20 text-fenix-bearish text-xs font-semibold hover:bg-fenix-bearish/30 transition-colors cursor-pointer">
+                <button className="py-2 rounded bg-aura-bearish/20 text-aura-bearish text-xs font-semibold hover:bg-aura-bearish/30 transition-colors cursor-pointer">
                   VENTA
                 </button>
               </div>
@@ -194,7 +194,7 @@ export function AssetDetailPage({ symbol }: AssetDetailPageProps) {
                 <InputField label="Stop Loss" value={formatNumber(asset.price * 0.95)} />
                 <InputField label="Take Profit" value={formatNumber(asset.price * 1.1)} />
               </div>
-              <button className="w-full py-2 rounded bg-fenix-accent text-white text-xs font-semibold hover:bg-fenix-accent-hover transition-colors cursor-pointer">
+              <button className="w-full py-2 rounded bg-aura-accent text-white text-xs font-semibold hover:bg-aura-accent-hover transition-colors cursor-pointer">
                 Simular Operacion
               </button>
             </div>
@@ -208,11 +208,11 @@ export function AssetDetailPage({ symbol }: AssetDetailPageProps) {
 function InputField({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <label className="text-[10px] text-fenix-text-muted uppercase">{label}</label>
+      <label className="text-[10px] text-aura-text-muted uppercase">{label}</label>
       <input
         type="text"
         defaultValue={value}
-        className="w-full mt-0.5 bg-fenix-card border border-fenix-border rounded px-2 py-1.5 text-xs font-mono text-fenix-text outline-none focus:border-fenix-accent transition-colors"
+        className="w-full mt-0.5 bg-aura-card border border-aura-border rounded px-2 py-1.5 text-xs font-mono text-aura-text outline-none focus:border-aura-accent transition-colors"
       />
     </div>
   )
@@ -320,24 +320,24 @@ function OrderBookMock({ price }: { price: number }) {
       {asks.map((ask, i) => (
         <div key={`a${i}`} className="flex items-center justify-between relative px-1 py-0.5">
           <div
-            className="absolute right-0 top-0 bottom-0 bg-fenix-bearish/8"
+            className="absolute right-0 top-0 bottom-0 bg-aura-bearish/8"
             style={{ width: `${(ask.size / maxSize) * 100}%` }}
           />
-          <span className="text-fenix-bearish relative z-10">{formatNumber(ask.price)}</span>
-          <span className="text-fenix-text-muted relative z-10">{ask.size}</span>
+          <span className="text-aura-bearish relative z-10">{formatNumber(ask.price)}</span>
+          <span className="text-aura-text-muted relative z-10">{ask.size}</span>
         </div>
       ))}
-      <div className="py-1 text-center text-xs font-semibold text-fenix-text border-y border-fenix-border">
+      <div className="py-1 text-center text-xs font-semibold text-aura-text border-y border-aura-border">
         ${formatNumber(price)}
       </div>
       {bids.map((bid, i) => (
         <div key={`b${i}`} className="flex items-center justify-between relative px-1 py-0.5">
           <div
-            className="absolute left-0 top-0 bottom-0 bg-fenix-bullish/8"
+            className="absolute left-0 top-0 bottom-0 bg-aura-bullish/8"
             style={{ width: `${(bid.size / maxSize) * 100}%` }}
           />
-          <span className="text-fenix-bullish relative z-10">{formatNumber(bid.price)}</span>
-          <span className="text-fenix-text-muted relative z-10">{bid.size}</span>
+          <span className="text-aura-bullish relative z-10">{formatNumber(bid.price)}</span>
+          <span className="text-aura-text-muted relative z-10">{bid.size}</span>
         </div>
       ))}
     </div>
@@ -357,12 +357,12 @@ function TradesTapeMock({ price }: { price: number }) {
       {trades.map((trade, i) => (
         <div key={i} className="flex items-center justify-between px-1 py-0.5">
           <span
-            className={trade.side === 'buy' ? 'text-fenix-bullish' : 'text-fenix-bearish'}
+            className={trade.side === 'buy' ? 'text-aura-bullish' : 'text-aura-bearish'}
           >
             {formatNumber(trade.price)}
           </span>
-          <span className="text-fenix-text-muted">{trade.size}</span>
-          <span className="text-fenix-text-muted">
+          <span className="text-aura-text-muted">{trade.size}</span>
+          <span className="text-aura-text-muted">
             {trade.time.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
           </span>
         </div>
