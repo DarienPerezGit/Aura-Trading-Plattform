@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ArrowUpRight,
   ArrowDownRight,
@@ -18,6 +18,7 @@ import { GeoIntelMap } from '@/components/charts/GeoIntelMap'
 import { cn } from '@/lib/utils'
 import { formatNumber, formatPercent, formatVolume } from '@/lib/format'
 import { MOCK_SIGNALS, MOCK_AI_MARKET_SUMMARY } from '@/data/mock-signals'
+import { fetchMacroSignal } from '@/lib/api'
 import type { AISignal } from '@/stores/ai-store'
 
 const GLOBAL_INDICES = ['SPY', 'QQQ', 'BTC', 'ETH', 'DXY', 'GLD', 'OIL', 'VIX']
@@ -27,6 +28,27 @@ export function CommandCenterPage() {
   const movers = useMarketStore((s) => s.movers)
   const watchlist = useMarketStore((s) => s.watchlist)
   const { navigate } = useWorkspaceStore()
+
+  const [regime, setRegime] = useState<string>('Risk-On')
+  const [regimeDetail, setRegimeDetail] = useState<string>('Momentum alcista')
+  const [aiSummary, setAiSummary] = useState<string>(MOCK_AI_MARKET_SUMMARY)
+
+  useEffect(() => {
+    fetchMacroSignal()
+      .then((signal) => {
+        const label = signal.signal === 'RISK_ON' ? 'Risk-On' : 'Risk-Off'
+        setRegime(label)
+        setRegimeDetail(`Confianza: ${(signal.confidence * 100).toFixed(0)}%`)
+        const summary = `**Sesion ${label}** (${(signal.confidence * 100).toFixed(0)}%) — ${signal.reasoning}
+
+**Factores clave:**
+${signal.key_factors.map((f) => `- ${f}`).join('\n')}
+
+**Senal:** ${signal.signal}`
+        setAiSummary(summary)
+      })
+      .catch(() => {})
+  }, [])
 
   const globalAssets = useMemo(
     () => GLOBAL_INDICES.map((s) => assets[s]).filter(Boolean),
@@ -143,9 +165,9 @@ export function CommandCenterPage() {
           <div className="grid grid-cols-4 gap-2 shrink-0">
             <MetricCard
               label="Regimen"
-              value="Risk-On"
-              subValue="Momentum alcista"
-              trend="up"
+              value={regime}
+              subValue={regimeDetail}
+              trend={regime === 'Risk-On' ? 'up' : 'down'}
               icon={<Activity className="w-3.5 h-3.5" />}
             />
             <MetricCard
@@ -181,7 +203,7 @@ export function CommandCenterPage() {
             actions={<Brain className="w-3.5 h-3.5 text-aura-ai" />}
           >
             <div className="text-[10px] leading-relaxed text-aura-text-secondary whitespace-pre-line">
-              {MOCK_AI_MARKET_SUMMARY.split('**').map((part, i) =>
+              {aiSummary.split('**').map((part, i) =>
                 i % 2 === 1 ? (
                   <strong key={i} className="text-aura-text font-semibold">{part}</strong>
                 ) : (

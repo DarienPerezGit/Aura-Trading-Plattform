@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Brain,
   ChevronRight,
@@ -10,7 +10,8 @@ import { useUIStore } from '@/stores/ui-store'
 import { useAlertsStore } from '@/stores/alerts-store'
 import { cn } from '@/lib/utils'
 import { MOCK_AI_MARKET_SUMMARY } from '@/data/mock-signals'
-import { MOCK_NEWS } from '@/data/mock-news'
+import { MOCK_NEWS, type NewsItem } from '@/data/mock-news'
+import { fetchMarketNews, fetchMacroSignal, type NewsItem as APINewsItem } from '@/lib/api'
 
 type Tab = 'ai' | 'alertas' | 'noticias'
 
@@ -72,6 +73,23 @@ export function RightIntelRail() {
 }
 
 function AITab() {
+  const [summary, setSummary] = useState(MOCK_AI_MARKET_SUMMARY)
+
+  useEffect(() => {
+    fetchMacroSignal()
+      .then((signal) => {
+        const regime = signal.signal === 'RISK_ON' ? 'Risk-On' : 'Risk-Off'
+        const realSummary = `**Sesion ${regime}** (confianza: ${(signal.confidence * 100).toFixed(0)}%) — ${signal.reasoning}
+
+**Factores clave:**
+${signal.key_factors.map((f) => `- ${f}`).join('\n')}
+
+**Senal:** ${signal.signal} | **Fecha snapshot:** ${signal.snapshot_date ?? 'N/A'}`
+        setSummary(realSummary)
+      })
+      .catch(() => {}) // keep mock
+  }, [])
+
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 text-aura-ai text-xs font-medium">
@@ -80,7 +98,7 @@ function AITab() {
       </div>
       <div className="panel-card p-3">
         <div className="text-xs text-aura-text leading-relaxed whitespace-pre-line">
-          {MOCK_AI_MARKET_SUMMARY.split('**').map((part, i) =>
+          {summary.split('**').map((part, i) =>
             i % 2 === 1 ? (
               <strong key={i} className="text-aura-text font-semibold">
                 {part}
@@ -127,8 +145,33 @@ function AlertsTab({ alerts }: { alerts: ReturnType<typeof useAlertsStore.getSta
   )
 }
 
+function apiToLocalNews(item: APINewsItem, idx: number): NewsItem {
+  const score = item.sentiment ?? 0
+  return {
+    id: item.id || String(idx),
+    headline: item.headline,
+    source: item.source,
+    timestamp: new Date(item.timestamp),
+    symbols: item.symbols.filter(Boolean),
+    sentiment: score > 0.1 ? 'positivo' : score < -0.1 ? 'negativo' : 'neutral',
+    relevance: Math.min(100, Math.max(20, Math.round(Math.abs(score) * 100 + 40))),
+    topic: item.symbols[0] || 'General',
+    summary: item.summary,
+  }
+}
+
 function NewsTab() {
-  const news = MOCK_NEWS.slice(0, 6)
+  const [news, setNews] = useState<NewsItem[]>(MOCK_NEWS.slice(0, 6))
+
+  useEffect(() => {
+    fetchMarketNews()
+      .then((items) => {
+        if (items.length > 0) {
+          setNews(items.slice(0, 6).map(apiToLocalNews))
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   return (
     <div className="space-y-2">

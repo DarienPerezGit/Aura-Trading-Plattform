@@ -10,11 +10,24 @@ import { StatusBadge } from '@/components/shared/StatusBadge'
 import { PriceChange } from '@/components/shared/PriceChange'
 import { cn } from '@/lib/utils'
 import { formatNumber, formatVolume } from '@/lib/format'
-import { getOHLCForTimeframe } from '@/data/generators/ohlc-generator'
+import { getOHLCForTimeframe, type OHLCBar as LocalOHLCBar } from '@/data/generators/ohlc-generator'
+import { fetchStockBars, fetchCryptoOHLCV } from '@/lib/api'
 import { MOCK_SIGNALS } from '@/data/mock-signals'
 import { ASSET_EXCHANGES, INITIAL_ASSETS } from '@/data/generators/price-ticker'
 import { TIMEFRAMES, type Timeframe } from '@/config/constants'
 import { theme } from '@/config/theme'
+
+const CRYPTO_SYMBOLS = new Set(['BTC', 'ETH', 'SOL', 'BNB'])
+
+// Map frontend timeframes to backend format
+const TF_TO_ALPACA: Record<string, string> = {
+  '1m': '1Min', '5m': '5Min', '15m': '15Min',
+  '1h': '1Hour', '4h': '1Hour', '1D': '1Day', '1W': '1Week',
+}
+const TF_TO_CCXT: Record<string, string> = {
+  '1m': '1m', '5m': '5m', '15m': '15m',
+  '1h': '1h', '4h': '4h', '1D': '1d', '1W': '1w',
+}
 
 interface AssetDetailPageProps {
   symbol: string
@@ -227,6 +240,7 @@ function CandlestickChartView({ symbol, price, timeframe }: { symbol: string; pr
 
   useEffect(() => {
     if (!chartRef.current) return
+    let cancelled = false
 
     // Cleanup previous chart
     if (chartInstance.current) {
@@ -234,68 +248,97 @@ function CandlestickChartView({ symbol, price, timeframe }: { symbol: string; pr
       chartInstance.current = null
     }
 
-    const chart = createChart(chartRef.current, {
-      layout: {
-        background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: theme.colors.textSecondary,
-        fontSize: 11,
-      },
-      grid: {
-        vertLines: { color: theme.chart.grid },
-        horzLines: { color: theme.chart.grid },
-      },
-      crosshair: {
-        vertLine: { color: theme.chart.crosshair, width: 1, style: 2 },
-        horzLine: { color: theme.chart.crosshair, width: 1, style: 2 },
-      },
-      rightPriceScale: { borderColor: theme.colors.border },
-      timeScale: { borderColor: theme.colors.border, timeVisible: true },
+    async function fetchBars(): Promise<LocalOHLCBar[]> {
+      try {
+        const isCrypto = CRYPTO_SYMBOLS.has(symbol)
+        const apiBars = isCrypto
+          ? await fetchCryptoOHLCV(symbol, TF_TO_CCXT[timeframe] ?? '1d', 200)
+          : await fetchStockBars(symbol, TF_TO_ALPACA[timeframe] ?? '1Day', 200)
+
+        if (apiBars.length > 0) {
+          return apiBars.map((b) => ({
+            time: Math.floor(new Date(b.timestamp).getTime() / 1000),
+            open: +b.open.toFixed(2),
+            high: +b.high.toFixed(2),
+            low: +b.low.toFixed(2),
+            close: +b.close.toFixed(2),
+            volume: b.volume,
+          }))
+        }
+      } catch { /* fallback */ }
+      return getOHLCForTimeframe(price, timeframe, 200, volatility)
+    }
+
+    fetchBars().then((data) => {
+      if (cancelled || !chartRef.current) return
+
+      const chart = createChart(chartRef.current!, {
+        layout: {
+          background: { type: ColorType.Solid, color: 'transparent' },
+          textColor: theme.colors.textSecondary,
+          fontSize: 11,
+        },
+        grid: {
+          vertLines: { color: theme.chart.grid },
+          horzLines: { color: theme.chart.grid },
+        },
+        crosshair: {
+          vertLine: { color: theme.chart.crosshair, width: 1, style: 2 },
+          horzLine: { color: theme.chart.crosshair, width: 1, style: 2 },
+        },
+        rightPriceScale: { borderColor: theme.colors.border },
+        timeScale: { borderColor: theme.colors.border, timeVisible: true },
+      })
+
+      const candleSeries = chart.addSeries(CandlestickSeries, {
+        upColor: theme.chart.upColor,
+        downColor: theme.chart.downColor,
+        borderUpColor: theme.chart.upColor,
+        borderDownColor: theme.chart.downColor,
+        wickUpColor: theme.chart.upColor,
+        wickDownColor: theme.chart.downColor,
+      })
+
+      candleSeries.setData(data.map((bar) => ({ ...bar, time: bar.time as Time })))
+
+      const volumeSeries = chart.addSeries(HistogramSeries, {
+        priceFormat: { type: 'volume' },
+        priceScaleId: 'volume',
+      })
+
+      chart.priceScale('volume').applyOptions({
+        scaleMargins: { top: 0.8, bottom: 0 },
+      })
+
+      volumeSeries.setData(
+        data.map((bar) => ({
+          time: bar.time as Time,
+          value: bar.volume,
+          color: bar.close >= bar.open ? theme.chart.volumeUp : theme.chart.volumeDown,
+        })),
+      )
+
+      chart.timeScale().fitContent()
+      chartInstance.current = chart
+
+      const resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const { width, height } = entry.contentRect
+          chart.applyOptions({ width, height })
+        }
+      })
+      resizeObserver.observe(chartRef.current!)
+
+      // Store cleanup references
+      chartRef.current!.dataset.cleanup = 'true'
     })
-
-    const candleSeries = chart.addSeries(CandlestickSeries, {
-      upColor: theme.chart.upColor,
-      downColor: theme.chart.downColor,
-      borderUpColor: theme.chart.upColor,
-      borderDownColor: theme.chart.downColor,
-      wickUpColor: theme.chart.upColor,
-      wickDownColor: theme.chart.downColor,
-    })
-
-    const data = getOHLCForTimeframe(price, timeframe, 200, volatility)
-    candleSeries.setData(data.map((bar) => ({ ...bar, time: bar.time as Time })))
-
-    const volumeSeries = chart.addSeries(HistogramSeries, {
-      priceFormat: { type: 'volume' },
-      priceScaleId: 'volume',
-    })
-
-    chart.priceScale('volume').applyOptions({
-      scaleMargins: { top: 0.8, bottom: 0 },
-    })
-
-    volumeSeries.setData(
-      data.map((bar) => ({
-        time: bar.time as Time,
-        value: bar.volume,
-        color: bar.close >= bar.open ? theme.chart.volumeUp : theme.chart.volumeDown,
-      })),
-    )
-
-    chart.timeScale().fitContent()
-    chartInstance.current = chart
-
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const { width, height } = entry.contentRect
-        chart.applyOptions({ width, height })
-      }
-    })
-    resizeObserver.observe(chartRef.current)
 
     return () => {
-      resizeObserver.disconnect()
-      chart.remove()
-      chartInstance.current = null
+      cancelled = true
+      if (chartInstance.current) {
+        chartInstance.current.remove()
+        chartInstance.current = null
+      }
     }
   }, [symbol, timeframe, price, volatility])
 

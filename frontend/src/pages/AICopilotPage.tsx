@@ -6,6 +6,7 @@ import { StatusBadge } from '@/components/shared/StatusBadge'
 import { useWorkspaceStore } from '@/stores/workspace-store'
 import { cn } from '@/lib/utils'
 import { MOCK_SIGNALS } from '@/data/mock-signals'
+import { fetchMacroSignal, fetchMacroSnapshot, fetchMarketNews } from '@/lib/api'
 
 const SUGGESTED_PROMPTS = [
   { text: 'Analiza NVDA', icon: TrendingUp },
@@ -81,21 +82,64 @@ const AI_RESPONSES: Record<string, string> = {
 **Duracion estimada:** 4-8 semanas mientras la Fed mantenga postura dovish.`,
 }
 
-function getAIResponse(query: string): string {
+async function getAIResponse(query: string): Promise<string> {
   const normalized = query.toLowerCase().trim()
+
+  // Try real API for regime/macro queries
+  if (normalized.includes('regimen') || normalized.includes('macro') || normalized.includes('risk')) {
+    try {
+      const [signal, snapshot] = await Promise.all([
+        fetchMacroSignal(),
+        fetchMacroSnapshot().catch(() => null),
+      ])
+      const indicators = snapshot?.indicators
+        .map((i) => `- **${i.name}** (${i.series_id}): ${i.value.toFixed(2)} ${i.unit} @ ${i.date}`)
+        .join('\n') ?? 'Sin datos macro disponibles'
+
+      return `**Regimen de Mercado Actual: ${signal.signal}** (confianza: ${(signal.confidence * 100).toFixed(0)}%)
+
+${signal.reasoning}
+
+**Factores clave:**
+${signal.key_factors.map((f) => `- ${f}`).join('\n')}
+
+**Indicadores Macro (FRED):**
+${indicators}
+
+**Snapshot:** ${signal.snapshot_date ?? 'N/A'}`
+    } catch { /* fallback below */ }
+  }
+
+  // Try real API for news queries
+  if (normalized.includes('noticias') || normalized.includes('sentimiento') || normalized.includes('news')) {
+    try {
+      const news = await fetchMarketNews()
+      if (news.length > 0) {
+        const top5 = news.slice(0, 5)
+        return `**Ultimas Noticias del Mercado:**
+
+${top5.map((n, i) => `${i + 1}. **${n.headline}** — ${n.source}
+   _${n.summary}_
+   Simbolos: ${n.symbols.join(', ') || 'General'}`).join('\n\n')}
+
+Total de noticias recibidas: ${news.length}`
+      }
+    } catch { /* fallback */ }
+  }
+
+  // Static responses for specific queries
   for (const [key, response] of Object.entries(AI_RESPONSES)) {
     if (normalized.includes(key)) return response
   }
+
   return `He analizado tu consulta: "${query}".
 
 **Resumen rapido:**
 Basandome en los datos actuales del mercado y las senales de nuestro motor de analisis, puedo observar patrones relevantes. Para un analisis mas detallado, te sugiero especificar un activo o usar uno de los prompts sugeridos.
 
 **Senales activas:** ${MOCK_SIGNALS.length} senales vigentes
-**Mercado:** Sesion risk-on con momentum alcista
-**Proximo evento clave:** Decision de tasas Fed en 48h
 
-Prueba preguntar algo mas especifico como "Analiza NVDA" o "Compara BTC vs ETH momentum".`
+Prueba preguntar algo mas especifico como "Analiza NVDA", "Resumen del regimen de mercado" o "Noticias del mercado".`
 }
 
 export function AICopilotPage() {
@@ -116,13 +160,7 @@ export function AICopilotPage() {
     setInput('')
     setIsGenerating(true)
 
-    // Simulate typing delay
-    const response = getAIResponse(query)
-    const words = response.split(' ')
-    for (let i = 0; i < words.length; i += 3) {
-      await new Promise((r) => setTimeout(r, 50))
-    }
-
+    const response = await getAIResponse(query)
     addMessage({ role: 'assistant', content: response })
     setIsGenerating(false)
   }
