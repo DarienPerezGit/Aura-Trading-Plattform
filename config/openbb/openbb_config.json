@@ -1,0 +1,11 @@
+{
+  "providers": {
+    "alpaca": {
+      "api_key": "${ALPACA_API_KEY}",
+      "secret_key": "${ALPACA_SECRET_KEY}"
+    },
+    "finnhub": {
+      "api_key": "${FINNHUB_API_KEY}"
+    }
+  }
+}
