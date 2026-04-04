@@ -1,4 +1,4 @@
-# FENIX — Institutional Quant Trading System
+# Aura Terminal — Institutional Quant Trading System
 
 > Buenos Aires Hackathon 2026 | Kaszek × Anthropic × Digital House  
 > Track: Fintech Infrastructure
@@ -13,7 +13,7 @@ Sistema Quant de Trading Algorítmico de nivel institucional con arquitectura mo
 ┌─────────────────────────────────────────────────────┐
 │  CAPA 4 — Visualización       (Grafana + Prometheus)│
 ├─────────────────────────────────────────────────────┤
-│  CAPA 3 — AI Agents           (Claude → Señales)    │W
+│  CAPA 3 — AI Agents           (Claude → Señales)    │
 ├─────────────────────────────────────────────────────┤
 │  CAPA 2 — Motor de Ejecución  (Event‑driven engine) │
 ├─────────────────────────────────────────────────────┤
@@ -27,7 +27,7 @@ Sistema Quant de Trading Algorítmico de nivel institucional con arquitectura mo
 ## Estructura de Carpetas
 
 ```
-fenix/
+aura_terminal/
 ├── data_pipeline/          ← CAPA 1: ingesta
 │   ├── websockets/         finnhub_ws.py, binance_ws.py
 │   ├── rest/               fred_client.py, polling.py
@@ -59,12 +59,12 @@ fenix/
 
 | Rama | Directorio principal | Responsabilidad |
 |---|---|---|
-| `feature/data-pipeline` | `fenix/data_pipeline/` | WebSockets, REST polling, conectores |
-| `feature/backtest-core` | `fenix/engine/` | Motor de eventos, backtesting, estrategias |
-| `feature/ai-agents` | `fenix/ai_agents/` | Claude agents, señales JSON |
-| `feature/monitoring` | `fenix/monitoring/` + `config/` | Grafana, Prometheus, métricas |
+| `feature/data-pipeline` | `aura_terminal/data_pipeline/` | WebSockets, REST polling, conectores |
+| `feature/backtest-core` | `aura_terminal/engine/` | Motor de eventos, backtesting, estrategias |
+| `feature/ai-agents` | `aura_terminal/ai_agents/` | Claude agents, señales JSON |
+| `feature/monitoring` | `aura_terminal/monitoring/` + `config/` | Grafana, Prometheus, métricas |
 
-Shared: `fenix/core/` y `fenix/api/` se tocan con PR aprobado.
+Shared: `aura_terminal/core/` y `aura_terminal/api/` se tocan con PR aprobado.
 
 ---
 
@@ -80,7 +80,7 @@ chmod +x setup.sh
 ### 2. Variables de entorno
 
 ```bash
-cp .env.example .env
+cp example.env .env
 # Completar API keys en .env
 ```
 
@@ -104,7 +104,7 @@ python -m venv .venv
 source .venv/bin/activate   # Linux/Mac
 # .venv\Scripts\activate    # Windows
 pip install -r requirements.txt
-python -m fenix.main
+python -m aura_terminal.main
 ```
 
 ### 5. Tests
@@ -118,9 +118,9 @@ pytest tests/ -v
 ## Convenciones de Contribución
 
 1. **Nunca pushear a `main` directo.** Todo via PR.
-2. **Cada rama toca solo su directorio.** Si necesitás cambiar `fenix/core/`, avisá al equipo.
+2. **Cada rama toca solo su directorio.** Si necesitás cambiar `aura_terminal/core/`, avisá al equipo.
 3. **Schemas compartidos** (`event_types.py`, `signal_schema.py`) se definen primero y se freezean antes de codear.
-4. **`.env` nunca se commitea.** Solo `.env.example`.
+4. **`.env` nunca se commitea.** Solo `example.env`.
 5. **Formato:** `ruff check . && ruff format .` antes de cada PR.
 6. **Tests:** cada módulo nuevo incluye al menos un test en `tests/<módulo>/`.
 
@@ -141,4 +141,4 @@ pytest tests/ -v
 
 ---
 
-*FENIX — Built for speed. Designed for scale.*
+*Aura Terminal — Built for speed. Designed for scale.*
