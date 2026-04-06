@@ -11,7 +11,13 @@ import { PriceChange } from '@/components/shared/PriceChange'
 import { cn } from '@/lib/utils'
 import { formatNumber, formatVolume } from '@/lib/format'
 import { getOHLCForTimeframe, type OHLCBar as LocalOHLCBar } from '@/data/generators/ohlc-generator'
-import { fetchStockBars, fetchCryptoOHLCV } from '@/lib/api'
+import {
+  fetchStockBars, fetchCryptoOHLCV,
+  fetchCompanyNews, fetchSentiment,
+  fetchOrderBook, fetchRecentTrades,
+  type NewsItem, type SentimentData,
+  type OrderBook, type RecentTrade,
+} from '@/lib/api'
 import { MOCK_SIGNALS } from '@/data/mock-signals'
 import { ASSET_EXCHANGES, INITIAL_ASSETS } from '@/data/generators/price-ticker'
 import { TIMEFRAMES, type Timeframe } from '@/config/constants'
@@ -37,6 +43,40 @@ export function AssetDetailPage({ symbol }: AssetDetailPageProps) {
   const asset = useMarketStore((s) => s.assets[symbol])
   const [timeframe, setTimeframe] = useState<Timeframe>('1D')
   const signal = MOCK_SIGNALS.find((s) => s.symbol === symbol)
+  const [news, setNews] = useState<NewsItem[]>([])
+  const [sentiment, setSentiment] = useState<SentimentData | null>(null)
+  const [orderBook, setOrderBook] = useState<OrderBook | null>(null)
+  const [trades, setTrades] = useState<RecentTrade[]>([])
+  const isCrypto = CRYPTO_SYMBOLS.has(symbol)
+
+  // Noticias + sentimiento (solo stocks)
+  useEffect(() => {
+    if (isCrypto) return
+    fetchCompanyNews(symbol).then(setNews).catch(() => {})
+    fetchSentiment(symbol).then(setSentiment).catch(() => {})
+  }, [symbol, isCrypto])
+
+  // Order book + trades reales (solo crypto via Binance)
+  useEffect(() => {
+    if (!isCrypto) return
+    let cancelled = false
+
+    const refresh = () => {
+      if (cancelled) return
+      fetchOrderBook(symbol).then((b) => { if (!cancelled) setOrderBook(b) }).catch(() => {})
+      fetchRecentTrades(symbol).then((t) => { if (!cancelled) setTrades(t) }).catch(() => {})
+    }
+
+    refresh()
+    const bookInterval = setInterval(refresh, 2000)
+    const tradesInterval = setInterval(refresh, 5000)
+
+    return () => {
+      cancelled = true
+      clearInterval(bookInterval)
+      clearInterval(tradesInterval)
+    }
+  }, [symbol, isCrypto])
 
   if (!asset) {
     return (
@@ -104,13 +144,17 @@ export function AssetDetailPage({ symbol }: AssetDetailPageProps) {
 
       {/* Main Content Grid */}
       <div className="flex-1 grid grid-cols-12 gap-3 min-h-0">
-        {/* Left: Order Book + Stats */}
+        {/* Left: Order Book + Trades */}
         <div className="col-span-2 flex flex-col gap-3 min-h-0">
-          <DataPanel title="Order Book" className="flex-1">
-            <OrderBookMock price={asset.price} />
+          <DataPanel title="Order Book" subtitle={isCrypto ? 'Binance L2' : 'Simulado'} className="flex-1">
+            {isCrypto && orderBook
+              ? <OrderBookReal book={orderBook} />
+              : <OrderBookMock price={asset.price} />}
           </DataPanel>
-          <DataPanel title="Trades Recientes" className="flex-1">
-            <TradesTapeMock price={asset.price} />
+          <DataPanel title="Trades Recientes" subtitle={isCrypto ? 'Live' : 'Simulado'} className="flex-1">
+            {isCrypto && trades.length > 0
+              ? <TradesTapeReal trades={trades} />
+              : <TradesTapeMock price={asset.price} />}
           </DataPanel>
         </div>
 
@@ -132,7 +176,7 @@ export function AssetDetailPage({ symbol }: AssetDetailPageProps) {
               </button>
             ))}
           </div>
-          <div className="flex-1 panel min-h-0">
+          <div className="flex-1 panel min-h-0" style={{ minHeight: '300px' }}>
             <CandlestickChartView symbol={symbol} price={asset.price} timeframe={timeframe} />
           </div>
         </div>
@@ -191,8 +235,57 @@ export function AssetDetailPage({ symbol }: AssetDetailPageProps) {
             </DataPanel>
           )}
 
+          {/* Sentiment */}
+          {sentiment && (
+            <DataPanel title="Sentimiento Finnhub" className="shrink-0">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="text-center">
+                  <div className={cn('text-sm font-bold font-mono', sentiment.score >= 0 ? 'text-aura-bullish' : 'text-aura-bearish')}>
+                    {sentiment.score >= 0 ? '+' : ''}{sentiment.score.toFixed(2)}
+                  </div>
+                  <div className="text-[9px] text-aura-text-muted mt-0.5">Score</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-sm font-bold font-mono text-aura-text">{sentiment.buzz.toFixed(2)}</div>
+                  <div className="text-[9px] text-aura-text-muted mt-0.5">Buzz</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-sm font-bold font-mono text-aura-text">{sentiment.articles_count}</div>
+                  <div className="text-[9px] text-aura-text-muted mt-0.5">Artículos</div>
+                </div>
+              </div>
+            </DataPanel>
+          )}
+
+          {/* News Panel */}
+          {news.length > 0 && (
+            <DataPanel title="Noticias Recientes" subtitle={`${news.length} artículos`} className="flex-1 overflow-hidden">
+              <div className="space-y-2 overflow-y-auto max-h-full">
+                {news.slice(0, 6).map((item) => (
+                  <a
+                    key={item.id}
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block panel-card p-2 hover:bg-aura-card-hover transition-colors"
+                  >
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="text-[9px] text-aura-text-muted">{item.source}</span>
+                      <span className="text-[9px] text-aura-text-muted ml-auto">
+                        {new Date(item.timestamp).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
+                      </span>
+                    </div>
+                    <p className="text-[10px] leading-snug text-aura-text-secondary line-clamp-2">
+                      {item.headline}
+                    </p>
+                  </a>
+                ))}
+              </div>
+            </DataPanel>
+          )}
+
           {/* Order Panel */}
-          <DataPanel title="Panel de Orden" subtitle="Simulado">
+          <DataPanel title="Panel de Orden" subtitle="Simulado" className="shrink-0">
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
                 <button className="py-2 rounded bg-aura-bullish/20 text-aura-bullish text-xs font-semibold hover:bg-aura-bullish/30 transition-colors cursor-pointer">
@@ -273,6 +366,7 @@ function CandlestickChartView({ symbol, price, timeframe }: { symbol: string; pr
       if (cancelled || !chartRef.current) return
 
       const chart = createChart(chartRef.current!, {
+        autoSize: true,
         layout: {
           background: { type: ColorType.Solid, color: 'transparent' },
           textColor: theme.colors.textSecondary,
@@ -320,17 +414,6 @@ function CandlestickChartView({ symbol, price, timeframe }: { symbol: string; pr
 
       chart.timeScale().fitContent()
       chartInstance.current = chart
-
-      const resizeObserver = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          const { width, height } = entry.contentRect
-          chart.applyOptions({ width, height })
-        }
-      })
-      resizeObserver.observe(chartRef.current!)
-
-      // Store cleanup references
-      chartRef.current!.dataset.cleanup = 'true'
     })
 
     return () => {
@@ -342,7 +425,67 @@ function CandlestickChartView({ symbol, price, timeframe }: { symbol: string; pr
     }
   }, [symbol, timeframe, price, volatility])
 
-  return <div ref={chartRef} className="w-full h-full" />
+  return <div ref={chartRef} style={{ width: '100%', height: '100%', minHeight: '300px' }} />
+}
+
+function OrderBookReal({ book }: { book: OrderBook }) {
+  const asks = [...book.asks].reverse() // mayor a menor para mostrar encima
+  const maxSize = Math.max(
+    ...book.bids.map((b) => b.size),
+    ...book.asks.map((a) => a.size),
+    1,
+  )
+  const midPrice = book.asks[0]
+    ? (book.bids[0]?.price + book.asks[0].price) / 2
+    : book.bids[0]?.price ?? 0
+
+  return (
+    <div className="space-y-0.5 font-mono text-[10px]">
+      {asks.map((ask, i) => (
+        <div key={`a${i}`} className="flex items-center justify-between relative px-1 py-0.5">
+          <div
+            className="absolute right-0 top-0 bottom-0 bg-aura-bearish/10"
+            style={{ width: `${(ask.size / maxSize) * 100}%` }}
+          />
+          <span className="text-aura-bearish relative z-10">{formatNumber(ask.price)}</span>
+          <span className="text-aura-text-muted relative z-10">{ask.size.toFixed(4)}</span>
+        </div>
+      ))}
+      <div className="py-1 text-center text-xs font-semibold text-aura-text border-y border-aura-border">
+        ${formatNumber(midPrice)}
+      </div>
+      {book.bids.map((bid, i) => (
+        <div key={`b${i}`} className="flex items-center justify-between relative px-1 py-0.5">
+          <div
+            className="absolute left-0 top-0 bottom-0 bg-aura-bullish/10"
+            style={{ width: `${(bid.size / maxSize) * 100}%` }}
+          />
+          <span className="text-aura-bullish relative z-10">{formatNumber(bid.price)}</span>
+          <span className="text-aura-text-muted relative z-10">{bid.size.toFixed(4)}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function TradesTapeReal({ trades }: { trades: RecentTrade[] }) {
+  return (
+    <div className="space-y-0.5 font-mono text-[10px]">
+      {[...trades].reverse().map((trade, i) => (
+        <div key={i} className="flex items-center justify-between px-1 py-0.5">
+          <span className={trade.side === 'buy' ? 'text-aura-bullish' : 'text-aura-bearish'}>
+            {formatNumber(trade.price)}
+          </span>
+          <span className="text-aura-text-muted">{trade.size.toFixed(4)}</span>
+          <span className="text-aura-text-muted">
+            {new Date(trade.timestamp).toLocaleTimeString('es-AR', {
+              hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+            })}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
 }
 
 function OrderBookMock({ price }: { price: number }) {

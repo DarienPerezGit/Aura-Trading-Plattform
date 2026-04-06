@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 import ccxt.async_support as ccxt
 
 from aura_terminal.core.logger import logger
-from aura_terminal.core.models import CryptoTicker, OHLCBar
+from aura_terminal.core.models import CryptoTicker, OHLCBar, OrderBook, OrderBookLevel, RecentTrade
 
 
 # ── Exchange builder ─────────────────────────────────────────────────────────
@@ -68,6 +68,61 @@ async def get_crypto_ohlcv(
                 volume=candle[5],
             ))
         return bars
+    finally:
+        await exchange.close()
+
+
+async def get_order_book(symbol: str = "BTC/USDT", limit: int = 20) -> OrderBook:
+    """
+    Obtiene el order book (L2) de un par crypto via Binance.
+    GET /api/v3/depth — weight 10 con limit=20. Sin API key requerida.
+    """
+    exchange = _build_exchange()
+    try:
+        raw = await exchange.fetch_order_book(symbol, limit=limit)
+        logger.debug(f"CCXT order book {symbol}: {len(raw['bids'])} bids, {len(raw['asks'])} asks")
+
+        ts = datetime.fromtimestamp(
+            (raw.get("timestamp") or 0) / 1000, tz=timezone.utc
+        ).isoformat() if raw.get("timestamp") else datetime.now(timezone.utc).isoformat()
+
+        return OrderBook(
+            symbol=symbol,
+            bids=[OrderBookLevel(price=float(b[0]), size=float(b[1])) for b in raw["bids"]],
+            asks=[OrderBookLevel(price=float(a[0]), size=float(a[1])) for a in raw["asks"]],
+            timestamp=ts,
+        )
+    finally:
+        await exchange.close()
+
+
+async def get_recent_trades(symbol: str = "BTC/USDT", limit: int = 20) -> list[RecentTrade]:
+    """
+    Obtiene los últimos trades de un par crypto via Binance.
+    GET /api/v3/trades — weight 25. Sin API key requerida.
+    """
+    exchange = _build_exchange()
+    try:
+        raw = await exchange.fetch_trades(symbol, limit=limit)
+        logger.debug(f"CCXT recent trades {symbol}: {len(raw)} trades fetched")
+
+        trades: list[RecentTrade] = []
+        for t in raw:
+            side = "buy" if t.get("side") == "buy" else "sell"
+            # Binance taker side: si 'takerOrMaker' no está, usar 'isBuyerMaker'
+            info = t.get("info", {})
+            if "isBuyerMaker" in info:
+                side = "sell" if info["isBuyerMaker"] else "buy"
+            ts = datetime.fromtimestamp(
+                (t.get("timestamp") or 0) / 1000, tz=timezone.utc
+            ).isoformat() if t.get("timestamp") else datetime.now(timezone.utc).isoformat()
+            trades.append(RecentTrade(
+                price=float(t.get("price", 0)),
+                size=float(t.get("amount", 0)),
+                side=side,
+                timestamp=ts,
+            ))
+        return trades
     finally:
         await exchange.close()
 

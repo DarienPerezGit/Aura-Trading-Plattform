@@ -6,7 +6,7 @@ import { StatusBadge } from '@/components/shared/StatusBadge'
 import { useWorkspaceStore } from '@/stores/workspace-store'
 import { cn } from '@/lib/utils'
 import { MOCK_SIGNALS } from '@/data/mock-signals'
-import { fetchMacroSignal, fetchMacroSnapshot, fetchMarketNews } from '@/lib/api'
+import { fetchChat, type ChatMessage as APIChatMessage } from '@/lib/api'
 
 const SUGGESTED_PROMPTS = [
   { text: 'Analiza NVDA', icon: TrendingUp },
@@ -16,130 +16,14 @@ const SUGGESTED_PROMPTS = [
   { text: 'Por que esta senal es bajista en TSLA?', icon: Bot },
 ]
 
-const AI_RESPONSES: Record<string, string> = {
-  'analiza nvda': `**NVDA — Analisis Completo**
-
-**Precio actual:** $885.20 | **Senal:** COMPRA (87% confianza)
-
-**Analisis Tecnico:**
-- Tendencia primaria: Alcista fuerte
-- Soporte clave: $850 (EMA 20)
-- Resistencia: $920 (maximo historico)
-- RSI: 72 (sobrecompra leve, pero en tendencia fuerte es sostenible)
-- MACD: Cruce alcista confirmado hace 3 sesiones
-
-**Drivers Fundamentales:**
-1. Earnings Q4 superaron estimaciones ($22.1B vs $20.4B est.)
-2. Guia Q1 2026: $24B (por encima del consenso de $22.5B)
-3. Demanda de chips AI sigue acelerando (GPU H100/H200)
-4. Data center revenue +280% YoY
-
-**Riesgo:** RSI elevado sugiere posible pullback de corto plazo (-3-5%). Stop recomendado: $838.
-
-**Regimen:** Momentum alcista institucional. Mantener posicion larga.`,
-
-  'compara btc vs eth momentum': `**Comparativa BTC vs ETH — Momentum**
-
-| Metrica | BTC | ETH |
-|---------|-----|-----|
-| Precio | $95,420 | $3,680 |
-| Cambio 7D | +8.2% | +5.4% |
-| Cambio 30D | +22.1% | +18.7% |
-| RSI (14) | 68 | 61 |
-| Vol. relativo | 1.45x | 1.22x |
-| Flujo neto ETF | +$2.4B/sem | +$420M/sem |
-| Correlacion | — | 0.87 con BTC |
-
-**Conclusion:** BTC lidera el momentum actual, impulsado por flujos institucionales via ETFs. ETH muestra momentum positivo pero rezagado. El ratio ETH/BTC esta en minimos de 6 meses — potencial de mean reversion favorable a ETH si el rally crypto se amplia.
-
-**Recomendacion:** Sobreponderar BTC en el corto plazo. Acumular ETH para rotacion tardia del ciclo.`,
-
-  'resumen del regimen de mercado': `**Regimen de Mercado Actual: RISK-ON**
-
-**Caracteristicas:**
-- Apetito por riesgo elevado
-- Tech/Growth liderando
-- Crypto en rally (BTC cerca de $100K)
-- VIX contenido (~14.8)
-- Spread de credito comprimido
-
-**Macro Context:**
-- Fed dovish: posible recorte Q3 2026
-- Inflacion en tendencia bajista (CPI 2.8%)
-- Empleo robusto (3.6% unemployment)
-- China debil (headwind moderado)
-
-**Sectores favorecidos:**
-1. Semiconductores (+momentum, +earnings)
-2. Crypto (+flujos institucionales)
-3. Software/AI (+adopcion acelerando)
-
-**Sectores en riesgo:**
-1. Energia (demanda debil)
-2. Real Estate (tasas altas)
-3. Consumer Discretionary China-exposed
-
-**Duracion estimada:** 4-8 semanas mientras la Fed mantenga postura dovish.`,
-}
-
-async function getAIResponse(query: string): Promise<string> {
-  const normalized = query.toLowerCase().trim()
-
-  // Try real API for regime/macro queries
-  if (normalized.includes('regimen') || normalized.includes('macro') || normalized.includes('risk')) {
-    try {
-      const [signal, snapshot] = await Promise.all([
-        fetchMacroSignal(),
-        fetchMacroSnapshot().catch(() => null),
-      ])
-      const indicators = snapshot?.indicators
-        .map((i) => `- **${i.name}** (${i.series_id}): ${i.value.toFixed(2)} ${i.unit} @ ${i.date}`)
-        .join('\n') ?? 'Sin datos macro disponibles'
-
-      return `**Regimen de Mercado Actual: ${signal.signal}** (confianza: ${(signal.confidence * 100).toFixed(0)}%)
-
-${signal.reasoning}
-
-**Factores clave:**
-${signal.key_factors.map((f) => `- ${f}`).join('\n')}
-
-**Indicadores Macro (FRED):**
-${indicators}
-
-**Snapshot:** ${signal.snapshot_date ?? 'N/A'}`
-    } catch { /* fallback below */ }
+async function getAIResponse(query: string, history: APIChatMessage[]): Promise<string> {
+  try {
+    const res = await fetchChat(query, history)
+    return res.response
+  } catch (err) {
+    console.error('Chat API error:', err)
+    return `Error al conectar con el copiloto AI. Verifica que el backend esté corriendo y que ANTHROPIC_API_KEY esté configurada.\n\nError: ${err instanceof Error ? err.message : String(err)}`
   }
-
-  // Try real API for news queries
-  if (normalized.includes('noticias') || normalized.includes('sentimiento') || normalized.includes('news')) {
-    try {
-      const news = await fetchMarketNews()
-      if (news.length > 0) {
-        const top5 = news.slice(0, 5)
-        return `**Ultimas Noticias del Mercado:**
-
-${top5.map((n, i) => `${i + 1}. **${n.headline}** — ${n.source}
-   _${n.summary}_
-   Simbolos: ${n.symbols.join(', ') || 'General'}`).join('\n\n')}
-
-Total de noticias recibidas: ${news.length}`
-      }
-    } catch { /* fallback */ }
-  }
-
-  // Static responses for specific queries
-  for (const [key, response] of Object.entries(AI_RESPONSES)) {
-    if (normalized.includes(key)) return response
-  }
-
-  return `He analizado tu consulta: "${query}".
-
-**Resumen rapido:**
-Basandome en los datos actuales del mercado y las senales de nuestro motor de analisis, puedo observar patrones relevantes. Para un analisis mas detallado, te sugiero especificar un activo o usar uno de los prompts sugeridos.
-
-**Senales activas:** ${MOCK_SIGNALS.length} senales vigentes
-
-Prueba preguntar algo mas especifico como "Analiza NVDA", "Resumen del regimen de mercado" o "Noticias del mercado".`
 }
 
 export function AICopilotPage() {
@@ -160,7 +44,13 @@ export function AICopilotPage() {
     setInput('')
     setIsGenerating(true)
 
-    const response = await getAIResponse(query)
+    // Construir historial para contexto conversacional
+    const history: APIChatMessage[] = messages.map((m) => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+    }))
+
+    const response = await getAIResponse(query, history)
     addMessage({ role: 'assistant', content: response })
     setIsGenerating(false)
   }

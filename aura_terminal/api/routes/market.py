@@ -26,6 +26,8 @@ from aura_terminal.core.models import (
     CryptoTicker,
     OHLCBar,
     SentimentData,
+    OrderBook,
+    RecentTrade,
 )
 from aura_terminal.core.redis_client import get_redis
 from aura_terminal.data_pipeline.fred_client import (
@@ -39,6 +41,7 @@ from aura_terminal.data_pipeline.finnhub_client import (
     get_market_news as finnhub_get_market_news,
     get_company_news as finnhub_get_company_news,
     get_sentiment as finnhub_get_sentiment,
+    get_quotes_batch as finnhub_get_quotes_batch,
 )
 from aura_terminal.data_pipeline.alpaca_client import (
     get_stock_quote,
@@ -49,6 +52,8 @@ from aura_terminal.data_pipeline.ccxt_client import (
     get_crypto_ticker as ccxt_get_ticker,
     get_crypto_ohlcv as ccxt_get_ohlcv,
     get_multiple_tickers as ccxt_get_multiple_tickers,
+    get_order_book as ccxt_get_order_book,
+    get_recent_trades as ccxt_get_recent_trades,
 )
 
 router = APIRouter(prefix="/market", tags=["market"])
@@ -352,6 +357,60 @@ async def stock_bars(symbol: str, timeframe: str = "1Day", limit: int = 100):
     return bars
 
 
+# ── Market Indices (Finnhub) ────────────────────────────────────────────────
+
+# Mapeo: símbolo Finnhub → símbolo display en el frontend
+_INDEX_FINNHUB_MAP = {
+    "SPY": "SPY",    # S&P 500 ETF
+    "QQQ": "QQQ",    # Nasdaq 100 ETF
+    "GLD": "GLD",    # Gold ETF
+    "^VIX": "VIX",   # CBOE Volatility Index
+    "UUP": "DXY",    # USD Index proxy (PowerShares DB Dollar Bullish)
+    "USO": "OIL",    # WTI Oil ETF proxy
+}
+
+
+@router.get("/indices", response_model=list[QuoteData])
+async def market_indices():
+    """
+    Cotizaciones en tiempo real de índices y ETFs clave (SPY, QQQ, GLD, VIX, DXY, OIL).
+    Usa Finnhub como fuente con símbolos proxy para índices no directamente cotizables.
+    """
+    if not settings.FINNHUB_API_KEY:
+        raise HTTPException(status_code=503, detail="FINNHUB_API_KEY not configured")
+
+    cache_key = "market:indices"
+    redis = None
+    try:
+        redis = await get_redis()
+        cached = await redis.get(cache_key)
+        if cached:
+            logger.debug("Cache hit → market indices")
+            import json as _json
+            return _json.loads(cached)
+    except Exception as e:
+        logger.warning(f"Redis unavailable, skipping cache: {e}")
+
+    logger.info("Fetching market indices from Finnhub...")
+    finnhub_symbols = list(_INDEX_FINNHUB_MAP.keys())
+    alias = {k: v for k, v in _INDEX_FINNHUB_MAP.items() if k != v}
+
+    try:
+        quotes = await finnhub_get_quotes_batch(finnhub_symbols, symbol_alias=alias)
+    except Exception as e:
+        logger.error(f"Finnhub indices fetch failed: {e}")
+        raise HTTPException(status_code=502, detail=f"Error fetching indices: {e}")
+
+    if redis is not None and quotes:
+        try:
+            import json as _json
+            await redis.setex(cache_key, 30, _json.dumps([q.model_dump() for q in quotes]))
+        except Exception as e:
+            logger.warning(f"Redis write failed: {e}")
+
+    return quotes
+
+
 # ── Crypto (CCXT / Binance) ─────────────────────────────────────────────────
 
 
@@ -419,6 +478,73 @@ async def crypto_tickers(symbols: str = Query(default="BTC,ETH,SOL")):
         except Exception as e:
             logger.warning(f"Redis write failed: {e}")
     return tickers
+
+
+@router.get("/crypto/orderbook/{symbol}", response_model=OrderBook)
+async def crypto_orderbook(symbol: str, limit: int = Query(default=20, le=50)):
+    """
+    Order book L2 de un par crypto via Binance (/api/v3/depth).
+    Weight: 10 con limit=20. Sin API key requerida.
+    """
+    symbol = symbol.upper()
+    pair = f"{symbol}/USDT"
+    cache_key = f"crypto:orderbook:{symbol}"
+    redis = None
+    try:
+        redis = await get_redis()
+        cached = await redis.get(cache_key)
+        if cached:
+            import json as _json
+            return OrderBook(**_json.loads(cached))
+    except Exception as e:
+        logger.warning(f"Redis unavailable: {e}")
+
+    try:
+        book = await ccxt_get_order_book(pair, limit=limit)
+    except Exception as e:
+        logger.error(f"Order book failed ({pair}): {e}")
+        raise HTTPException(status_code=502, detail=f"Error fetching order book: {e}")
+
+    if redis is not None:
+        try:
+            await redis.setex(cache_key, 2, book.model_dump_json())
+        except Exception as e:
+            logger.warning(f"Redis write failed: {e}")
+    return book
+
+
+@router.get("/crypto/trades/{symbol}", response_model=list[RecentTrade])
+async def crypto_trades(symbol: str, limit: int = Query(default=20, le=50)):
+    """
+    Trades recientes de un par crypto via Binance (/api/v3/trades).
+    Weight: 25. Sin API key requerida.
+    """
+    symbol = symbol.upper()
+    pair = f"{symbol}/USDT"
+    cache_key = f"crypto:trades:{symbol}"
+    redis = None
+    try:
+        redis = await get_redis()
+        cached = await redis.get(cache_key)
+        if cached:
+            import json as _json
+            return _json.loads(cached)
+    except Exception as e:
+        logger.warning(f"Redis unavailable: {e}")
+
+    try:
+        trades = await ccxt_get_recent_trades(pair, limit=limit)
+    except Exception as e:
+        logger.error(f"Recent trades failed ({pair}): {e}")
+        raise HTTPException(status_code=502, detail=f"Error fetching trades: {e}")
+
+    if redis is not None:
+        try:
+            import json as _json
+            await redis.setex(cache_key, 5, _json.dumps([t.model_dump() for t in trades]))
+        except Exception as e:
+            logger.warning(f"Redis write failed: {e}")
+    return trades
 
 
 @router.get("/crypto/ohlcv/{symbol}", response_model=list[OHLCBar])

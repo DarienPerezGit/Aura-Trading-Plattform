@@ -3,6 +3,7 @@ import { useMarketStore, type MarketAsset } from '@/stores/market-store'
 import {
   fetchStockQuotes,
   fetchCryptoTickers,
+  fetchIndices,
   type QuoteData,
   type CryptoTicker,
 } from '@/lib/api'
@@ -17,7 +18,6 @@ import {
 
 const STOCK_SYMBOLS = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'JPM']
 const CRYPTO_SYMBOLS = ['BTC', 'ETH', 'SOL', 'BNB']
-const INDEX_SYMBOLS = ['SPY', 'QQQ', 'DXY', 'GLD', 'VIX', 'OIL']
 const POLL_INTERVAL = 10_000 // 10s
 
 function stockQuoteToAsset(q: QuoteData, prev?: MarketAsset): MarketAsset {
@@ -111,12 +111,13 @@ export function useMarketData() {
     const current = useMarketStore.getState().assets
 
     try {
-      const [stockQuotes, cryptoTickers] = await Promise.all([
+      const [stockQuotes, cryptoTickers, indices] = await Promise.all([
         fetchStockQuotes(STOCK_SYMBOLS).catch(() => [] as QuoteData[]),
         fetchCryptoTickers(CRYPTO_SYMBOLS.join(',')).catch(() => [] as CryptoTicker[]),
+        fetchIndices().catch(() => [] as QuoteData[]),
       ])
 
-      if (stockQuotes.length === 0 && cryptoTickers.length === 0) {
+      if (stockQuotes.length === 0 && cryptoTickers.length === 0 && indices.length === 0) {
         return false // API not available
       }
 
@@ -129,8 +130,11 @@ export function useMarketData() {
         const sym = t.symbol.replace('/USDT', '')
         updateAsset(sym, cryptoTickerToAsset(t, current[sym]))
       }
+      // Índices: SPY, QQQ, GLD, VIX, DXY, OIL via Finnhub
+      for (const q of indices) {
+        updateAsset(q.symbol, stockQuoteToAsset(q, current[q.symbol]))
+      }
 
-      // Update movers after all assets are updated
       const updated = useMarketStore.getState().assets
       setMovers(computeMovers(updated))
       return true

@@ -24,24 +24,20 @@ def _build_finnhub() -> finnhub.Client:
 # ── Sync helpers (ejecutar en thread) ────────────────────────────────────────
 
 def _fetch_market_news_sync(client: finnhub.Client, category: str) -> list[dict]:
-    """Obtiene noticias generales del mercado."""
     return client.general_news(category, min_id=0)
 
 
 def _fetch_company_news_sync(client: finnhub.Client, symbol: str) -> list[dict]:
-    """Obtiene noticias de una compañía en los últimos 30 días."""
     today = datetime.utcnow().strftime("%Y-%m-%d")
     from_date = (datetime.utcnow() - timedelta(days=30)).strftime("%Y-%m-%d")
     return client.company_news(symbol, _from=from_date, to=today)
 
 
 def _fetch_quote_sync(client: finnhub.Client, symbol: str) -> dict:
-    """Obtiene la cotización actual de un símbolo."""
     return client.quote(symbol)
 
 
 def _fetch_sentiment_sync(client: finnhub.Client, symbol: str) -> dict:
-    """Obtiene el sentimiento de noticias para un símbolo."""
     return client.news_sentiment(symbol)
 
 
@@ -97,8 +93,8 @@ async def get_quote(symbol: str) -> QuoteData:
     raw = await asyncio.to_thread(_fetch_quote_sync, client, symbol)
     logger.debug(f"Finnhub quote {symbol}: {raw.get('c', 0)}")
 
-    current = raw.get("c", 0.0)
-    prev_close = raw.get("pc", 0.0)
+    current = raw.get("c", 0.0) or 0.0
+    prev_close = raw.get("pc", 0.0) or 0.0
     change = current - prev_close
     change_pct = (change / prev_close * 100) if prev_close else 0.0
 
@@ -107,12 +103,43 @@ async def get_quote(symbol: str) -> QuoteData:
         price=current,
         change=round(change, 4),
         change_percent=round(change_pct, 4),
-        high=raw.get("h", 0.0),
-        low=raw.get("l", 0.0),
-        open=raw.get("o", 0.0),
+        high=raw.get("h", 0.0) or 0.0,
+        low=raw.get("l", 0.0) or 0.0,
+        open=raw.get("o", 0.0) or 0.0,
         prev_close=prev_close,
-        timestamp=datetime.utcfromtimestamp(raw.get("t", 0)).isoformat() + "Z",
+        timestamp=datetime.utcfromtimestamp(raw.get("t", 0) or 0).isoformat() + "Z",
     )
+
+
+async def get_quotes_batch(
+    symbols: list[str],
+    symbol_alias: dict[str, str] | None = None,
+) -> list[QuoteData]:
+    """
+    Obtiene cotizaciones de múltiples símbolos en paralelo via Finnhub.
+
+    Args:
+        symbols: lista de tickers Finnhub (e.g. ["SPY", "QQQ", "^VIX"]).
+        symbol_alias: renombra el símbolo en la respuesta {finnhub_sym: display_sym}.
+                      Útil para mapear "^VIX" → "VIX", "UUP" → "DXY", etc.
+    """
+    alias = symbol_alias or {}
+    tasks = [get_quote(s) for s in symbols]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    quotes: list[QuoteData] = []
+    for symbol, result in zip(symbols, results):
+        if isinstance(result, Exception):
+            logger.warning(f"Finnhub quote failed for {symbol}: {result}")
+            continue
+        if result.price == 0.0:
+            logger.warning(f"Finnhub returned price=0 for {symbol}, skipping")
+            continue
+        # Renombrar símbolo si hay alias
+        if symbol in alias:
+            result = result.model_copy(update={"symbol": alias[symbol]})
+        quotes.append(result)
+    return quotes
 
 
 async def get_sentiment(symbol: str) -> SentimentData:
@@ -126,7 +153,7 @@ async def get_sentiment(symbol: str) -> SentimentData:
 
     return SentimentData(
         symbol=symbol,
-        score=sentiment.get("score", 0.0),
-        buzz=buzz.get("buzz", 0.0),
-        articles_count=buzz.get("articlesInLastWeek", 0),
+        score=sentiment.get("score", 0.0) or 0.0,
+        buzz=buzz.get("buzz", 0.0) or 0.0,
+        articles_count=buzz.get("articlesInLastWeek", 0) or 0,
     )

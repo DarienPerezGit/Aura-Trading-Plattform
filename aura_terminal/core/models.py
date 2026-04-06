@@ -76,6 +76,39 @@ class SentimentData(BaseModel):
     articles_count: int
 
 
+class ChatMessage(BaseModel):
+    role: str       # "user" | "assistant"
+    content: str
+
+
+class ChatRequest(BaseModel):
+    message: str
+    history: list[ChatMessage] = []
+
+
+class ChatResponse(BaseModel):
+    response: str
+
+
+class OrderBookLevel(BaseModel):
+    price: float
+    size: float
+
+
+class OrderBook(BaseModel):
+    symbol: str
+    bids: list[OrderBookLevel]   # ordenados de mayor a menor precio
+    asks: list[OrderBookLevel]   # ordenados de menor a mayor precio
+    timestamp: str
+
+
+class RecentTrade(BaseModel):
+    price: float
+    size: float
+    side: str        # "buy" | "sell"
+    timestamp: str
+
+
 class NewsSentimentSignal(BaseModel):
     overall_sentiment: str          # positivo | negativo | neutral
     score: float                    # -1.0 to 1.0

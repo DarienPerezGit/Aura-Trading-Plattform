@@ -129,6 +129,56 @@ export const fetchCryptoTickers = (symbols = 'BTC,ETH,SOL') =>
 export const fetchCryptoOHLCV = (symbol: string, timeframe = '1d', limit = 100) =>
   get<OHLCBar[]>(`/market/crypto/ohlcv/${symbol}?timeframe=${timeframe}&limit=${limit}`)
 
+// Crypto Order Book & Trades (Binance via CCXT — no API key needed)
+export interface OrderBookLevel {
+  price: number
+  size: number
+}
+
+export interface OrderBook {
+  symbol: string
+  bids: OrderBookLevel[]
+  asks: OrderBookLevel[]
+  timestamp: string
+}
+
+export interface RecentTrade {
+  price: number
+  size: number
+  side: 'buy' | 'sell'
+  timestamp: string
+}
+
+export const fetchOrderBook = (symbol: string, limit = 20) =>
+  get<OrderBook>(`/market/crypto/orderbook/${symbol}?limit=${limit}`)
+
+export const fetchRecentTrades = (symbol: string, limit = 20) =>
+  get<RecentTrade[]>(`/market/crypto/trades/${symbol}?limit=${limit}`)
+
+// Market Indices (SPY, QQQ, GLD, VIX, DXY, OIL via Finnhub)
+export const fetchIndices = () =>
+  get<QuoteData[]>('/market/indices')
+
 // AI Analysis
 export const fetchMacroSignal = () =>
   get<MacroSignal>('/analysis/macro/signal')
+
+// AI Chat
+export interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export interface ChatResponse {
+  response: string
+}
+
+export const fetchChat = (message: string, history: ChatMessage[] = []) =>
+  fetch(`${BASE}/analysis/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, history }),
+  }).then((res) => {
+    if (!res.ok) throw new Error(`API ${res.status}: ${res.statusText}`)
+    return res.json() as Promise<ChatResponse>
+  })
