@@ -12,6 +12,8 @@ services:
     container_name: aura-app
     restart: unless-stopped
     env_file: .env
+    environment:
+      - REDIS_URL=redis://aura-redis:6379
     ports:
       - "8000:8000"       # FastAPI / metrics
     volumes:

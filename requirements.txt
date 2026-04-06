@@ -20,13 +20,14 @@ httpx>=0.27.0
 
 # --- Data Hub (OpenBB Platform) ---
 # Hub central de datos: normaliza múltiples fuentes y expone REST API en localhost:6900
-openbb>=4.3.0
-openbb-alpaca>=1.2.0
+# openbb>=4.3.0              # TODO: habilitar cuando se integre OpenBB Hub
+# openbb-alpaca>=1.2.0       # TODO: no compatible con Python 3.11 aún
 
 # --- Exchange Connectivity ---
 ccxt>=4.3.0
 finnhub-python>=2.4.0
 alpaca-py>=0.30.0          # SDK oficial Alpaca (reemplaza alpaca-trade-api deprecated)
+pytz>=2024.1               # Requerido por alpaca-py
 
 # --- Macro Data ---
 fredapi>=0.5.1
@@ -44,14 +45,14 @@ uvicorn[standard]>=0.30.0
 
 # --- Execution Engine (nautilus_trader) ---
 # Motor de backtesting + live trading con core en Rust (10-100x vs Python puro)
-nautilus-trader>=1.200.0
+# nautilus-trader>=1.200.0   # TODO: requiere Rust toolchain, habilitar en fase 2
 
 # --- Technical Indicators ---
-pandas-ta>=0.3.14b
+# pandas-ta>=0.3.14b         # TODO: habilitar cuando se implemente backtesting
 
 # --- Performance Analytics ---
-pyfolio-reloaded>=0.9.7    # Sharpe, Max Drawdown, Calmar Ratio
-quantstats>=0.0.62          # portfolio analytics y reportes HTML
+# pyfolio-reloaded>=0.9.7    # TODO: habilitar para reportes de Sharpe, Drawdown
+# quantstats>=0.0.62         # TODO: habilitar para portfolio analytics
 
 # --- Observability ---
 prometheus-client>=0.20.0
