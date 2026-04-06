@@ -14,8 +14,11 @@ REQUEST_LATENCY = Histogram("aura_request_latency_seconds", "Request latency", [
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Aura Terminal starting up...")
-    await get_redis()
-    logger.info("Redis connected.")
+    try:
+        await get_redis()
+        logger.info("Redis connected.")
+    except Exception as e:
+        logger.warning(f"Redis not available at startup: {e} — cache disabled.")
     yield
     logger.info("Aura Terminal shutting down...")
     await close_redis()

@@ -1,0 +1,271 @@
+@import "tailwindcss";
+
+/* Google Fonts import */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ============================================================
+   AURA — Institutional Dark Terminal Theme
+   Bloomberg / Palantir aesthetic
+   ============================================================ */
+
+@theme {
+  /* --- Base surfaces --- */
+  --color-aura-bg: #0B0E11;
+  --color-aura-panel: #111518;
+  --color-aura-card: #1A1E23;
+  --color-aura-card-hover: #21262C;
+  --color-aura-border: rgba(255, 255, 255, 0.06);
+  --color-aura-border-light: rgba(255, 255, 255, 0.10);
+
+  /* --- Glass surfaces --- */
+  --color-aura-glass: rgba(17, 21, 24, 0.85);
+  --color-aura-glass-strong: rgba(17, 21, 24, 0.92);
+
+  /* --- Text --- */
+  --color-aura-text: #E4E8EF;
+  --color-aura-text-secondary: #7A8494;
+  --color-aura-text-muted: #4A5160;
+
+  /* --- Primary accent (Cyan / Blue) --- */
+  --color-aura-accent: #00D1FF;
+  --color-aura-accent-hover: #00B8E6;
+  --color-aura-accent-bg: rgba(0, 209, 255, 0.10);
+  --color-aura-accent-glow: rgba(0, 209, 255, 0.20);
+
+  /* --- AI accent (Purple) --- */
+  --color-aura-ai: #A855F7;
+  --color-aura-ai-hover: #9333EA;
+  --color-aura-ai-bg: rgba(168, 85, 247, 0.10);
+  --color-aura-ai-glow: rgba(168, 85, 247, 0.20);
+
+  /* --- Market status --- */
+  --color-aura-bullish: #00C853;
+  --color-aura-bearish: #FF3B5C;
+  --color-aura-warning: #FFB020;
+  --color-aura-neutral: #6B7B8D;
+
+  /* --- Status backgrounds --- */
+  --color-aura-bullish-bg: rgba(0, 200, 83, 0.10);
+  --color-aura-bearish-bg: rgba(255, 59, 92, 0.10);
+  --color-aura-warning-bg: rgba(255, 176, 32, 0.10);
+
+  /* --- Fonts --- */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+}
+
+/* ============================================================
+   Base Styles
+   ============================================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--color-aura-bg);
+  color: var(--color-aura-text);
+  font-family: var(--font-sans);
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+#root {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* ============================================================
+   Global smooth transitions
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, box-shadow, opacity;
+  transition-duration: 150ms;
+  transition-timing-function: ease;
+}
+
+/* Opt-out for elements that should not transition (e.g. charts) */
+canvas,
+svg,
+video,
+[data-no-transition] {
+  transition: none !important;
+}
+
+/* ============================================================
+   Focus states
+   ============================================================ */
+
+:focus-visible {
+  outline: 2px solid var(--color-aura-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ============================================================
+   Scrollbar — thin, dark, terminal feel
+   ============================================================ */
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 100px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Firefox thin scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+}
+
+/* ============================================================
+   Utility classes — Glassmorphism
+   ============================================================ */
+
+@utility glass {
+  background: var(--color-aura-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-aura-border);
+}
+
+@utility glass-strong {
+  background: var(--color-aura-glass-strong);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--color-aura-border-light);
+}
+
+/* ============================================================
+   Utility classes — Panel system
+   ============================================================ */
+
+@utility panel {
+  background-color: var(--color-aura-panel);
+  border: 1px solid var(--color-aura-border);
+  border-radius: 8px;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.25),
+    0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+@utility panel-card {
+  background-color: var(--color-aura-card);
+  border: 1px solid var(--color-aura-border);
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+@utility panel-card-hover {
+  background-color: var(--color-aura-card);
+  border: 1px solid var(--color-aura-border);
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+@utility panel-card-hover {
+  &:hover {
+    background-color: var(--color-aura-card-hover);
+    border-color: var(--color-aura-border-light);
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(255, 255, 255, 0.04);
+  }
+}
+
+/* ============================================================
+   Utility classes — Glows
+   ============================================================ */
+
+@utility glow-accent {
+  box-shadow: 0 0 20px var(--color-aura-accent-glow);
+}
+
+@utility glow-ai {
+  box-shadow: 0 0 20px var(--color-aura-ai-glow);
+}
+
+@utility glow-bullish {
+  box-shadow: 0 0 12px rgba(0, 200, 83, 0.20);
+}
+
+@utility glow-bearish {
+  box-shadow: 0 0 12px rgba(255, 59, 92, 0.20);
+}
+
+@utility glow-warning {
+  box-shadow: 0 0 12px rgba(255, 176, 32, 0.20);
+}
+
+/* ============================================================
+   Utility classes — Status colors
+   ============================================================ */
+
+@utility text-bullish {
+  color: var(--color-aura-bullish);
+}
+
+@utility text-bearish {
+  color: var(--color-aura-bearish);
+}
+
+@utility text-warning {
+  color: var(--color-aura-warning);
+}
+
+@utility text-accent {
+  color: var(--color-aura-accent);
+}
+
+@utility text-ai {
+  color: var(--color-aura-ai);
+}
+
+@utility bg-bullish {
+  background-color: var(--color-aura-bullish-bg);
+}
+
+@utility bg-bearish {
+  background-color: var(--color-aura-bearish-bg);
+}
+
+@utility bg-warning {
+  background-color: var(--color-aura-warning-bg);
+}
+
+@utility bg-accent {
+  background-color: var(--color-aura-accent-bg);
+}
+
+@utility bg-ai {
+  background-color: var(--color-aura-ai-bg);
+}
