@@ -104,11 +104,12 @@ function computeMovers(assets: Record<string, MarketAsset>) {
 export function useMarketData() {
   const { assets, setAssets, updateAsset, setMovers } = useMarketStore()
   const initialized = useRef(false)
-  const usingAPI = useRef(false)
+  const liveSymbols = useRef<Set<string>>(new Set())
 
   // Try to fetch from real APIs, fall back to mock
   const fetchRealData = useCallback(async () => {
     const current = useMarketStore.getState().assets
+    const nextLiveSymbols = new Set<string>()
 
     try {
       const [stockQuotes, cryptoTickers, indices] = await Promise.all([
@@ -118,27 +119,31 @@ export function useMarketData() {
       ])
 
       if (stockQuotes.length === 0 && cryptoTickers.length === 0 && indices.length === 0) {
+        liveSymbols.current = nextLiveSymbols
         return false // API not available
       }
 
-      usingAPI.current = true
-
       for (const q of stockQuotes) {
+        nextLiveSymbols.add(q.symbol)
         updateAsset(q.symbol, stockQuoteToAsset(q, current[q.symbol]))
       }
       for (const t of cryptoTickers) {
         const sym = t.symbol.replace('/USDT', '')
+        nextLiveSymbols.add(sym)
         updateAsset(sym, cryptoTickerToAsset(t, current[sym]))
       }
       // Índices: SPY, QQQ, GLD, VIX, DXY, OIL via Finnhub
       for (const q of indices) {
+        nextLiveSymbols.add(q.symbol)
         updateAsset(q.symbol, stockQuoteToAsset(q, current[q.symbol]))
       }
 
+      liveSymbols.current = nextLiveSymbols
       const updated = useMarketStore.getState().assets
       setMovers(computeMovers(updated))
       return true
     } catch {
+      liveSymbols.current = nextLiveSymbols
       return false
     }
   }, [updateAsset, setMovers])
@@ -166,10 +171,10 @@ export function useMarketData() {
 
     // Mock fallback ticking (only updates if API is not working)
     const mockInterval = setInterval(() => {
-      if (usingAPI.current) return
-
       const currentAssets = useMarketStore.getState().assets
       for (const config of INITIAL_ASSETS) {
+        if (liveSymbols.current.has(config.symbol)) continue
+
         const asset = currentAssets[config.symbol]
         if (!asset) continue
 

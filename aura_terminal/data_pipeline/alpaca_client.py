@@ -4,8 +4,9 @@ Capa 1: ingesta de datos de acciones USA via alpaca-py SDK
 """
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
+from alpaca.data.enums import DataFeed
 from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.requests import StockBarsRequest, StockSnapshotRequest
 from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
@@ -25,6 +26,16 @@ _TIMEFRAME_MAP = {
     "1Day":  TimeFrame.Day,
     "1Week": TimeFrame.Week,
     "1Month": TimeFrame.Month,
+}
+
+_LOOKBACK_BY_TIMEFRAME = {
+    "1Min": timedelta(days=2),
+    "5Min": timedelta(days=5),
+    "15Min": timedelta(days=10),
+    "1Hour": timedelta(days=30),
+    "1Day": timedelta(days=365),
+    "1Week": timedelta(days=365 * 3),
+    "1Month": timedelta(days=365 * 10),
 }
 
 
@@ -53,17 +64,24 @@ def _fetch_snapshots_sync(
 def _fetch_bars_sync(
     client: StockHistoricalDataClient,
     symbol: str,
+    timeframe_name: str,
     timeframe: TimeFrame,
     limit: int,
 ) -> list:
     """Obtiene barras históricas de un símbolo."""
+    lookback = _LOOKBACK_BY_TIMEFRAME.get(timeframe_name, timedelta(days=365))
     request = StockBarsRequest(
         symbol_or_symbols=symbol,
         timeframe=timeframe,
+        start=datetime.now(timezone.utc) - lookback,
         limit=limit,
+        feed=DataFeed.IEX,
     )
     response = client.get_stock_bars(request)
-    return response[symbol]
+    bars = response.data.get(symbol, []) if hasattr(response, "data") else response.get(symbol, [])
+    if not bars:
+        raise ValueError(f"No bars returned for {symbol}")
+    return bars
 
 
 # ── Snapshot → QuoteData conversion ─────────────────────────────────────────
@@ -136,7 +154,7 @@ async def get_stock_bars(
         )
 
     client = _build_alpaca()
-    raw_bars = await asyncio.to_thread(_fetch_bars_sync, client, symbol, tf, limit)
+    raw_bars = await asyncio.to_thread(_fetch_bars_sync, client, symbol, timeframe, tf, limit)
     logger.debug(f"Alpaca bars {symbol} ({timeframe}): {len(raw_bars)} bars fetched")
 
     bars: list[OHLCBar] = []

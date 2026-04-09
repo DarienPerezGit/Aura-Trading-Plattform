@@ -17,9 +17,7 @@ import { SparklineChart } from '@/components/charts/SparklineChart'
 import { GeoIntelMap } from '@/components/charts/GeoIntelMap'
 import { cn } from '@/lib/utils'
 import { formatNumber, formatPercent, formatVolume } from '@/lib/format'
-import { MOCK_SIGNALS, MOCK_AI_MARKET_SUMMARY } from '@/data/mock-signals'
 import { fetchMacroSignal } from '@/lib/api'
-import type { AISignal } from '@/stores/ai-store'
 
 const GLOBAL_INDICES = ['SPY', 'QQQ', 'BTC', 'ETH', 'DXY', 'GLD', 'OIL', 'VIX']
 
@@ -29,9 +27,9 @@ export function CommandCenterPage() {
   const watchlist = useMarketStore((s) => s.watchlist)
   const { navigate } = useWorkspaceStore()
 
-  const [regime, setRegime] = useState<string>('Risk-On')
-  const [regimeDetail, setRegimeDetail] = useState<string>('Momentum alcista')
-  const [aiSummary, setAiSummary] = useState<string>(MOCK_AI_MARKET_SUMMARY)
+  const [regime, setRegime] = useState<string>('No disponible')
+  const [regimeDetail, setRegimeDetail] = useState<string>('Esperando datos de AI')
+  const [aiSummary, setAiSummary] = useState<string | null>(null)
 
   useEffect(() => {
     fetchMacroSignal()
@@ -47,7 +45,11 @@ ${signal.key_factors.map((f) => `- ${f}`).join('\n')}
 **Senal:** ${signal.signal}`
         setAiSummary(summary)
       })
-      .catch(() => {})
+      .catch(() => {
+        setRegime('No disponible')
+        setRegimeDetail('Macro AI fuera de servicio')
+        setAiSummary(null)
+      })
   }, [])
 
   const globalAssets = useMemo(
@@ -95,17 +97,11 @@ ${signal.key_factors.map((f) => `- ${f}`).join('\n')}
         <div className="col-span-2 flex flex-col gap-2 min-h-0">
           <DataPanel
             title="Senales"
-            subtitle={`${MOCK_SIGNALS.length} activas`}
+            subtitle="Sin backend real"
             className="flex-1"
           >
-            <div className="space-y-1.5">
-              {MOCK_SIGNALS.map((signal) => (
-                <SignalCard
-                  key={signal.id}
-                  signal={signal}
-                  onClick={() => navigate(`/activo/${signal.symbol}`)}
-                />
-              ))}
+            <div className="h-full flex items-center justify-center text-xs text-aura-text-muted text-center">
+              No disponible.
             </div>
           </DataPanel>
 
@@ -179,8 +175,8 @@ ${signal.key_factors.map((f) => `- ${f}`).join('\n')}
             />
             <MetricCard
               label="Senales Activas"
-              value={String(MOCK_SIGNALS.length)}
-              subValue={`${MOCK_SIGNALS.filter((s) => s.direction === 'compra').length} compra, ${MOCK_SIGNALS.filter((s) => s.direction === 'venta').length} venta`}
+              value="0"
+              subValue="No disponible"
               icon={<Zap className="w-3.5 h-3.5" />}
             />
             <MetricCard
@@ -202,15 +198,19 @@ ${signal.key_factors.map((f) => `- ${f}`).join('\n')}
             className="shrink-0"
             actions={<Brain className="w-3.5 h-3.5 text-aura-ai" />}
           >
-            <div className="text-[10px] leading-relaxed text-aura-text-secondary whitespace-pre-line">
-              {aiSummary.split('**').map((part, i) =>
-                i % 2 === 1 ? (
-                  <strong key={i} className="text-aura-text font-semibold">{part}</strong>
-                ) : (
-                  <span key={i}>{part}</span>
-                ),
-              )}
-            </div>
+            {aiSummary ? (
+              <div className="text-[10px] leading-relaxed text-aura-text-secondary whitespace-pre-line">
+                {aiSummary.split('**').map((part, i) =>
+                  i % 2 === 1 ? (
+                    <strong key={i} className="text-aura-text font-semibold">{part}</strong>
+                  ) : (
+                    <span key={i}>{part}</span>
+                  ),
+                )}
+              </div>
+            ) : (
+              <div className="text-[10px] text-aura-text-muted">No disponible.</div>
+            )}
           </DataPanel>
 
           {/* Watchlist */}
@@ -236,32 +236,3 @@ ${signal.key_factors.map((f) => `- ${f}`).join('\n')}
   )
 }
 
-/* ---- Signal Card ---- */
-function SignalCard({ signal, onClick }: { signal: AISignal; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-full panel-card p-2 text-left hover:bg-aura-card-hover transition-all cursor-pointer"
-    >
-      <div className="flex items-center justify-between mb-0.5">
-        <span className="text-[11px] font-bold text-aura-text">{signal.symbol}</span>
-        <StatusBadge status={signal.direction} size="sm" />
-      </div>
-      <div className="flex items-center justify-between">
-        <span className="text-[9px] text-aura-text-muted truncate mr-2">{signal.regime}</span>
-        <span
-          className={cn(
-            'text-[10px] font-mono font-semibold',
-            signal.confidence >= 75
-              ? 'text-aura-bullish'
-              : signal.confidence >= 60
-                ? 'text-aura-warning'
-                : 'text-aura-text-muted',
-          )}
-        >
-          {signal.confidence}%
-        </span>
-      </div>
-    </button>
-  )
-}

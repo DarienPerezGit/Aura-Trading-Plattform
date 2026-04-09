@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { DataPanel } from '@/components/shared/DataPanel'
 import { MetricCard } from '@/components/shared/MetricCard'
 import { TOPIC_CLUSTERS, type NewsItem } from '@/data/mock-news'
-import { MOCK_NEWS } from '@/data/mock-news'
 import { fetchMarketNews, type NewsItem as APINewsItem } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { formatTime } from '@/lib/format'
@@ -25,17 +24,21 @@ function apiToLocalNews(item: APINewsItem, idx: number): NewsItem {
 }
 
 export function NewsSentimentPage() {
-  const [news, setNews] = useState<NewsItem[]>(MOCK_NEWS)
+  const [news, setNews] = useState<NewsItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchMarketNews()
       .then((items) => {
         if (items.length > 0) {
           setNews(items.map(apiToLocalNews))
+          setError(null)
+        } else {
+          setError('No hay noticias disponibles desde la API.')
         }
       })
-      .catch(() => {}) // keep mock data
+      .catch(() => setError('Noticias no disponibles.'))
       .finally(() => setLoading(false))
   }, [])
 
@@ -106,8 +109,17 @@ export function NewsSentimentPage() {
       <div className="flex-1 grid grid-cols-12 gap-3 min-h-0">
         {/* Left: News Stream */}
         <DataPanel title="Feed de Noticias" subtitle={`${total} noticias`} className="col-span-8">
-          <div className="space-y-2">
-            {news.map((item) => (
+          {loading ? (
+            <div className="h-full flex items-center justify-center text-xs text-fenix-text-muted">
+              Cargando noticias...
+            </div>
+          ) : error ? (
+            <div className="h-full flex items-center justify-center text-xs text-fenix-text-muted">
+              {error}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {news.map((item) => (
               <div key={item.id} className="panel-card p-3">
                 <div className="flex items-center gap-2 mb-1.5">
                   <span
@@ -147,8 +159,9 @@ export function NewsSentimentPage() {
                   ))}
                 </div>
               </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </DataPanel>
 
         {/* Right: Topic Intelligence */}

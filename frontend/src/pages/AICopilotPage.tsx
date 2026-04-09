@@ -2,10 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { Send, Bot, User, Sparkles, TrendingUp, BarChart3, Bell, FileText } from 'lucide-react'
 import { useAIStore, type AIMessage } from '@/stores/ai-store'
 import { DataPanel } from '@/components/shared/DataPanel'
-import { StatusBadge } from '@/components/shared/StatusBadge'
 import { useWorkspaceStore } from '@/stores/workspace-store'
 import { cn } from '@/lib/utils'
-import { MOCK_SIGNALS } from '@/data/mock-signals'
 import { fetchChat, type ChatMessage as APIChatMessage } from '@/lib/api'
 
 const SUGGESTED_PROMPTS = [
@@ -162,23 +160,7 @@ export function AICopilotPage() {
         </DataPanel>
 
         <DataPanel title="Senales Activas" className="flex-1">
-          <div className="space-y-2">
-            {MOCK_SIGNALS.slice(0, 4).map((signal) => (
-              <button
-                key={signal.id}
-                onClick={() => navigate(`/activo/${signal.symbol}`)}
-                className="w-full panel-card p-2 text-left hover:bg-aura-card-hover transition-all cursor-pointer"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-semibold text-aura-text">{signal.symbol}</span>
-                  <StatusBadge status={signal.direction} />
-                </div>
-                <div className="text-[10px] text-aura-text-muted">
-                  Confianza: {signal.confidence}%
-                </div>
-              </button>
-            ))}
-          </div>
+          <div className="text-xs text-aura-text-muted">No disponible.</div>
         </DataPanel>
       </div>
     </div>

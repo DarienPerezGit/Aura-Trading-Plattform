@@ -10,16 +10,15 @@ import { StatusBadge } from '@/components/shared/StatusBadge'
 import { PriceChange } from '@/components/shared/PriceChange'
 import { cn } from '@/lib/utils'
 import { formatNumber, formatVolume } from '@/lib/format'
-import { getOHLCForTimeframe, type OHLCBar as LocalOHLCBar } from '@/data/generators/ohlc-generator'
 import {
   fetchStockBars, fetchCryptoOHLCV,
   fetchCompanyNews, fetchSentiment,
   fetchOrderBook, fetchRecentTrades,
+  type OHLCBar,
   type NewsItem, type SentimentData,
   type OrderBook, type RecentTrade,
 } from '@/lib/api'
-import { MOCK_SIGNALS } from '@/data/mock-signals'
-import { ASSET_EXCHANGES, INITIAL_ASSETS } from '@/data/generators/price-ticker'
+import { ASSET_EXCHANGES } from '@/data/generators/price-ticker'
 import { TIMEFRAMES, type Timeframe } from '@/config/constants'
 import { theme } from '@/config/theme'
 
@@ -42,18 +41,25 @@ interface AssetDetailPageProps {
 export function AssetDetailPage({ symbol }: AssetDetailPageProps) {
   const asset = useMarketStore((s) => s.assets[symbol])
   const [timeframe, setTimeframe] = useState<Timeframe>('1D')
-  const signal = MOCK_SIGNALS.find((s) => s.symbol === symbol)
   const [news, setNews] = useState<NewsItem[]>([])
   const [sentiment, setSentiment] = useState<SentimentData | null>(null)
   const [orderBook, setOrderBook] = useState<OrderBook | null>(null)
   const [trades, setTrades] = useState<RecentTrade[]>([])
+  const [newsError, setNewsError] = useState(false)
+  const [sentimentError, setSentimentError] = useState(false)
+  const [orderBookError, setOrderBookError] = useState(false)
+  const [tradesError, setTradesError] = useState(false)
   const isCrypto = CRYPTO_SYMBOLS.has(symbol)
 
   // Noticias + sentimiento (solo stocks)
   useEffect(() => {
     if (isCrypto) return
-    fetchCompanyNews(symbol).then(setNews).catch(() => {})
-    fetchSentiment(symbol).then(setSentiment).catch(() => {})
+    setNews([])
+    setSentiment(null)
+    setNewsError(false)
+    setSentimentError(false)
+    fetchCompanyNews(symbol).then(setNews).catch(() => setNewsError(true))
+    fetchSentiment(symbol).then(setSentiment).catch(() => setSentimentError(true))
   }, [symbol, isCrypto])
 
   // Order book + trades reales (solo crypto via Binance)
@@ -63,8 +69,22 @@ export function AssetDetailPage({ symbol }: AssetDetailPageProps) {
 
     const refresh = () => {
       if (cancelled) return
-      fetchOrderBook(symbol).then((b) => { if (!cancelled) setOrderBook(b) }).catch(() => {})
-      fetchRecentTrades(symbol).then((t) => { if (!cancelled) setTrades(t) }).catch(() => {})
+      fetchOrderBook(symbol)
+        .then((b) => {
+          if (!cancelled) {
+            setOrderBook(b)
+            setOrderBookError(false)
+          }
+        })
+        .catch(() => { if (!cancelled) setOrderBookError(true) })
+      fetchRecentTrades(symbol)
+        .then((t) => {
+          if (!cancelled) {
+            setTrades(t)
+            setTradesError(false)
+          }
+        })
+        .catch(() => { if (!cancelled) setTradesError(true) })
     }
 
     refresh()
@@ -136,9 +156,8 @@ export function AssetDetailPage({ symbol }: AssetDetailPageProps) {
         <MetricCard label="Sector" value={asset.sector ?? 'N/A'} />
         <MetricCard
           label="Senal AI"
-          value={signal?.direction ?? 'N/A'}
-          subValue={signal ? `Confianza: ${signal.confidence}%` : undefined}
-          trend={signal?.direction === 'compra' ? 'up' : signal?.direction === 'venta' ? 'down' : undefined}
+          value="No disponible"
+          subValue="Sin backend real"
         />
       </div>
 
@@ -146,15 +165,11 @@ export function AssetDetailPage({ symbol }: AssetDetailPageProps) {
       <div className="flex-1 grid grid-cols-12 gap-3 min-h-0">
         {/* Left: Order Book + Trades */}
         <div className="col-span-2 flex flex-col gap-3 min-h-0">
-          <DataPanel title="Order Book" subtitle={isCrypto ? 'Binance L2' : 'Simulado'} className="flex-1">
-            {isCrypto && orderBook
-              ? <OrderBookReal book={orderBook} />
-              : <OrderBookMock price={asset.price} />}
+          <DataPanel title="Order Book" subtitle={isCrypto ? 'Binance L2' : 'No aplica'} className="flex-1">
+            {isCrypto && orderBook ? <OrderBookReal book={orderBook} /> : <UnavailablePanel message={orderBookError ? 'No disponible.' : 'Sin datos.'} />}
           </DataPanel>
-          <DataPanel title="Trades Recientes" subtitle={isCrypto ? 'Live' : 'Simulado'} className="flex-1">
-            {isCrypto && trades.length > 0
-              ? <TradesTapeReal trades={trades} />
-              : <TradesTapeMock price={asset.price} />}
+          <DataPanel title="Trades Recientes" subtitle={isCrypto ? 'Live' : 'No aplica'} className="flex-1">
+            {isCrypto && trades.length > 0 ? <TradesTapeReal trades={trades} /> : <UnavailablePanel message={tradesError ? 'No disponible.' : 'Sin datos.'} />}
           </DataPanel>
         </div>
 
@@ -183,60 +198,12 @@ export function AssetDetailPage({ symbol }: AssetDetailPageProps) {
 
         {/* Right: AI Analysis + Order Panel */}
         <div className="col-span-3 flex flex-col gap-3 min-h-0">
-          {signal ? (
-            <DataPanel title="Analisis AI" className="flex-1">
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <StatusBadge status={signal.direction} size="md" />
-                  <span className="text-sm font-semibold text-aura-text">
-                    Confianza: {signal.confidence}%
-                  </span>
-                </div>
-                <div className="w-full bg-aura-card rounded-full h-2">
-                  <div
-                    className={cn(
-                      'h-2 rounded-full',
-                      signal.direction === 'compra' ? 'bg-aura-bullish' : signal.direction === 'venta' ? 'bg-aura-bearish' : 'bg-aura-warning',
-                    )}
-                    style={{ width: `${signal.confidence}%` }}
-                  />
-                </div>
-                <div>
-                  <span className="text-[10px] uppercase text-aura-text-muted font-semibold">Analisis</span>
-                  <p className="text-xs text-aura-text-secondary mt-1 leading-relaxed">
-                    {signal.rationale}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-[10px] uppercase text-aura-text-muted font-semibold">Regimen</span>
-                  <p className="text-xs text-aura-text mt-1">{signal.regime}</p>
-                </div>
-                <div>
-                  <span className="text-[10px] uppercase text-aura-text-muted font-semibold">Riesgo</span>
-                  <p className="text-xs text-aura-warning mt-1">{signal.riskNote}</p>
-                </div>
-                <div>
-                  <span className="text-[10px] uppercase text-aura-text-muted font-semibold">Drivers</span>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {signal.drivers.map((d, i) => (
-                      <span key={i} className="text-[10px] bg-aura-card px-2 py-0.5 rounded text-aura-text-secondary">
-                        {d}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </DataPanel>
-          ) : (
-            <DataPanel title="Analisis AI" className="flex-1">
-              <div className="flex items-center justify-center h-full text-aura-text-muted text-xs">
-                Sin senal activa para {symbol}
-              </div>
-            </DataPanel>
-          )}
+          <DataPanel title="Analisis AI" className="flex-1">
+            <UnavailablePanel message="No disponible." />
+          </DataPanel>
 
           {/* Sentiment */}
-          {sentiment && (
+          {sentiment ? (
             <DataPanel title="Sentimiento Finnhub" className="shrink-0">
               <div className="grid grid-cols-3 gap-2">
                 <div className="text-center">
@@ -255,10 +222,14 @@ export function AssetDetailPage({ symbol }: AssetDetailPageProps) {
                 </div>
               </div>
             </DataPanel>
-          )}
+          ) : sentimentError ? (
+            <DataPanel title="Sentimiento Finnhub" className="shrink-0">
+              <UnavailablePanel message="No disponible." />
+            </DataPanel>
+          ) : null}
 
           {/* News Panel */}
-          {news.length > 0 && (
+          {news.length > 0 ? (
             <DataPanel title="Noticias Recientes" subtitle={`${news.length} artículos`} className="flex-1 overflow-hidden">
               <div className="space-y-2 overflow-y-auto max-h-full">
                 {news.slice(0, 6).map((item) => (
@@ -282,7 +253,11 @@ export function AssetDetailPage({ symbol }: AssetDetailPageProps) {
                 ))}
               </div>
             </DataPanel>
-          )}
+          ) : newsError ? (
+            <DataPanel title="Noticias Recientes" subtitle="API" className="flex-1 overflow-hidden">
+              <UnavailablePanel message="No disponible." />
+            </DataPanel>
+          ) : null}
 
           {/* Order Panel */}
           <DataPanel title="Panel de Orden" subtitle="Simulado" className="shrink-0">
@@ -324,46 +299,59 @@ function InputField({ label, value }: { label: string; value: string }) {
   )
 }
 
-function CandlestickChartView({ symbol, price, timeframe }: { symbol: string; price: number; timeframe: Timeframe }) {
+function CandlestickChartView({ symbol, price: _price, timeframe }: { symbol: string; price: number; timeframe: Timeframe }) {
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstance = useRef<IChartApi | null>(null)
-
-  const config = INITIAL_ASSETS.find((a) => a.symbol === symbol)
-  const volatility = config?.volatility ?? 0.003
+  const [bars, setBars] = useState<OHLCBar[] | null>(null)
+  const [status, setStatus] = useState<'loading' | 'ready' | 'unavailable'>('loading')
 
   useEffect(() => {
-    if (!chartRef.current) return
     let cancelled = false
 
-    // Cleanup previous chart
-    if (chartInstance.current) {
-      chartInstance.current.remove()
-      chartInstance.current = null
-    }
+    async function fetchBars() {
+      setStatus('loading')
+      setBars(null)
 
-    async function fetchBars(): Promise<LocalOHLCBar[]> {
       try {
         const isCrypto = CRYPTO_SYMBOLS.has(symbol)
         const apiBars = isCrypto
           ? await fetchCryptoOHLCV(symbol, TF_TO_CCXT[timeframe] ?? '1d', 200)
           : await fetchStockBars(symbol, TF_TO_ALPACA[timeframe] ?? '1Day', 200)
 
-        if (apiBars.length > 0) {
-          return apiBars.map((b) => ({
-            time: Math.floor(new Date(b.timestamp).getTime() / 1000),
-            open: +b.open.toFixed(2),
-            high: +b.high.toFixed(2),
-            low: +b.low.toFixed(2),
-            close: +b.close.toFixed(2),
-            volume: b.volume,
-          }))
+        if (!cancelled && apiBars.length > 0) {
+          setBars(apiBars)
+          setStatus('ready')
+          return
         }
-      } catch { /* fallback */ }
-      return getOHLCForTimeframe(price, timeframe, 200, volatility)
+      } catch {}
+
+      if (!cancelled) {
+        setStatus('unavailable')
+      }
     }
 
-    fetchBars().then((data) => {
-      if (cancelled || !chartRef.current) return
+    fetchBars()
+
+    return () => {
+      cancelled = true
+    }
+  }, [symbol, timeframe])
+
+  useEffect(() => {
+    if (status !== 'ready' || !bars || !chartRef.current) return
+    if (chartInstance.current) {
+      chartInstance.current.remove()
+      chartInstance.current = null
+    }
+
+    const data = bars.map((bar) => ({
+      time: Math.floor(new Date(bar.timestamp).getTime() / 1000),
+      open: +bar.open.toFixed(2),
+      high: +bar.high.toFixed(2),
+      low: +bar.low.toFixed(2),
+      close: +bar.close.toFixed(2),
+      volume: bar.volume,
+    }))
 
       const chart = createChart(chartRef.current!, {
         autoSize: true,
@@ -414,18 +402,32 @@ function CandlestickChartView({ symbol, price, timeframe }: { symbol: string; pr
 
       chart.timeScale().fitContent()
       chartInstance.current = chart
-    })
 
     return () => {
-      cancelled = true
       if (chartInstance.current) {
         chartInstance.current.remove()
         chartInstance.current = null
       }
     }
-  }, [symbol, timeframe, price, volatility])
+  }, [bars, status])
+
+  if (status === 'loading') {
+    return <UnavailablePanel message="Cargando velas..." />
+  }
+
+  if (status === 'unavailable') {
+    return <UnavailablePanel message="No disponible." />
+  }
 
   return <div ref={chartRef} style={{ width: '100%', height: '100%', minHeight: '300px' }} />
+}
+
+function UnavailablePanel({ message }: { message: string }) {
+  return (
+    <div className="h-full min-h-[160px] flex items-center justify-center text-xs text-aura-text-muted text-center px-4">
+      {message}
+    </div>
+  )
 }
 
 function OrderBookReal({ book }: { book: OrderBook }) {
@@ -488,71 +490,3 @@ function TradesTapeReal({ trades }: { trades: RecentTrade[] }) {
   )
 }
 
-function OrderBookMock({ price }: { price: number }) {
-  const asks = Array.from({ length: 8 }, (_, i) => ({
-    price: price + (i + 1) * price * 0.0003,
-    size: Math.floor(100 + Math.random() * 2000),
-  })).reverse()
-
-  const bids = Array.from({ length: 8 }, (_, i) => ({
-    price: price - (i + 1) * price * 0.0003,
-    size: Math.floor(100 + Math.random() * 2000),
-  }))
-
-  const maxSize = Math.max(...asks.map((a) => a.size), ...bids.map((b) => b.size))
-
-  return (
-    <div className="space-y-0.5 font-mono text-[10px]">
-      {asks.map((ask, i) => (
-        <div key={`a${i}`} className="flex items-center justify-between relative px-1 py-0.5">
-          <div
-            className="absolute right-0 top-0 bottom-0 bg-aura-bearish/8"
-            style={{ width: `${(ask.size / maxSize) * 100}%` }}
-          />
-          <span className="text-aura-bearish relative z-10">{formatNumber(ask.price)}</span>
-          <span className="text-aura-text-muted relative z-10">{ask.size}</span>
-        </div>
-      ))}
-      <div className="py-1 text-center text-xs font-semibold text-aura-text border-y border-aura-border">
-        ${formatNumber(price)}
-      </div>
-      {bids.map((bid, i) => (
-        <div key={`b${i}`} className="flex items-center justify-between relative px-1 py-0.5">
-          <div
-            className="absolute left-0 top-0 bottom-0 bg-aura-bullish/8"
-            style={{ width: `${(bid.size / maxSize) * 100}%` }}
-          />
-          <span className="text-aura-bullish relative z-10">{formatNumber(bid.price)}</span>
-          <span className="text-aura-text-muted relative z-10">{bid.size}</span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function TradesTapeMock({ price }: { price: number }) {
-  const trades = Array.from({ length: 15 }, (_, i) => ({
-    price: price * (1 + (Math.random() - 0.5) * 0.002),
-    size: Math.floor(10 + Math.random() * 500),
-    side: Math.random() > 0.5 ? 'buy' : 'sell',
-    time: new Date(Date.now() - i * 3000),
-  }))
-
-  return (
-    <div className="space-y-0.5 font-mono text-[10px]">
-      {trades.map((trade, i) => (
-        <div key={i} className="flex items-center justify-between px-1 py-0.5">
-          <span
-            className={trade.side === 'buy' ? 'text-aura-bullish' : 'text-aura-bearish'}
-          >
-            {formatNumber(trade.price)}
-          </span>
-          <span className="text-aura-text-muted">{trade.size}</span>
-          <span className="text-aura-text-muted">
-            {trade.time.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
-          </span>
-        </div>
-      ))}
-    </div>
-  )
-}

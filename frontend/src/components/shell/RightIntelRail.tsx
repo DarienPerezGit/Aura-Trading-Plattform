@@ -9,8 +9,7 @@ import {
 import { useUIStore } from '@/stores/ui-store'
 import { useAlertsStore } from '@/stores/alerts-store'
 import { cn } from '@/lib/utils'
-import { MOCK_AI_MARKET_SUMMARY } from '@/data/mock-signals'
-import { MOCK_NEWS, type NewsItem } from '@/data/mock-news'
+import { type NewsItem } from '@/data/mock-news'
 import { fetchMarketNews, fetchMacroSignal, type NewsItem as APINewsItem } from '@/lib/api'
 
 type Tab = 'ai' | 'alertas' | 'noticias'
@@ -73,7 +72,8 @@ export function RightIntelRail() {
 }
 
 function AITab() {
-  const [summary, setSummary] = useState(MOCK_AI_MARKET_SUMMARY)
+  const [summary, setSummary] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchMacroSignal()
@@ -87,7 +87,8 @@ ${signal.key_factors.map((f) => `- ${f}`).join('\n')}
 **Senal:** ${signal.signal} | **Fecha snapshot:** ${signal.snapshot_date ?? 'N/A'}`
         setSummary(realSummary)
       })
-      .catch(() => {}) // keep mock
+  .catch(() => setSummary(null))
+  .finally(() => setLoading(false))
   }, [])
 
   return (
@@ -97,17 +98,23 @@ ${signal.key_factors.map((f) => `- ${f}`).join('\n')}
         Resumen del Mercado
       </div>
       <div className="panel-card p-3">
-        <div className="text-xs text-aura-text leading-relaxed whitespace-pre-line">
-          {summary.split('**').map((part, i) =>
-            i % 2 === 1 ? (
-              <strong key={i} className="text-aura-text font-semibold">
-                {part}
-              </strong>
-            ) : (
-              <span key={i}>{part}</span>
-            ),
-          )}
-        </div>
+        {loading ? (
+          <div className="text-xs text-aura-text-muted">Cargando resumen AI...</div>
+        ) : summary ? (
+          <div className="text-xs text-aura-text leading-relaxed whitespace-pre-line">
+            {summary.split('**').map((part, i) =>
+              i % 2 === 1 ? (
+                <strong key={i} className="text-aura-text font-semibold">
+                  {part}
+                </strong>
+              ) : (
+                <span key={i}>{part}</span>
+              ),
+            )}
+          </div>
+        ) : (
+          <div className="text-xs text-aura-text-muted">No disponible.</div>
+        )}
       </div>
     </div>
   )
@@ -161,21 +168,31 @@ function apiToLocalNews(item: APINewsItem, idx: number): NewsItem {
 }
 
 function NewsTab() {
-  const [news, setNews] = useState<NewsItem[]>(MOCK_NEWS.slice(0, 6))
+  const [news, setNews] = useState<NewsItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchMarketNews()
       .then((items) => {
         if (items.length > 0) {
           setNews(items.slice(0, 6).map(apiToLocalNews))
+          setError(null)
+        } else {
+          setError('No hay noticias disponibles.')
         }
       })
-      .catch(() => {})
+      .catch(() => setError('No disponible.'))
+      .finally(() => setLoading(false))
   }, [])
 
   return (
     <div className="space-y-2">
-      {news.map((item) => (
+      {loading ? (
+        <div className="text-xs text-aura-text-muted">Cargando noticias...</div>
+      ) : error ? (
+        <div className="text-xs text-aura-text-muted">{error}</div>
+      ) : news.map((item) => (
         <div key={item.id} className="panel-card p-2.5">
           <div className="flex items-center gap-1.5 mb-1">
             <span

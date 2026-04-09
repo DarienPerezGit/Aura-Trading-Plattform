@@ -5,6 +5,7 @@ from prometheus_client import generate_latest, CONTENT_TYPE_LATEST, Counter, His
 from aura_terminal.core.redis_client import get_redis, close_redis
 from aura_terminal.core.logger import logger
 from aura_terminal.api.routes import health, market, analysis
+from aura_terminal.data_pipeline.ccxt_client import warmup_crypto_exchange
 
 # Prometheus metrics
 REQUEST_COUNT = Counter("aura_requests_total", "Total HTTP requests", ["method", "endpoint", "status"])
@@ -19,6 +20,10 @@ async def lifespan(app: FastAPI):
         logger.info("Redis connected.")
     except Exception as e:
         logger.warning(f"Redis not available at startup: {e} — cache disabled.")
+    try:
+        await warmup_crypto_exchange()
+    except Exception as e:
+        logger.warning(f"Binance warm-up failed at startup: {e}")
     yield
     logger.info("Aura Terminal shutting down...")
     await close_redis()
